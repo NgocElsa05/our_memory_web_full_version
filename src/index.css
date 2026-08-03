@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --om-primary: #7ca1d9;
+  --om-primary-soft: #bec3ea;
+  --om-accent: #e7b5d3;
+  --om-muted: #d7c8e9;
+  --om-lavender: #d7c8e9;
+  --om-tint: #f4f5fa;
+  --om-field: #f7f8fc;
+  --om-on-field: #1a1a1a;
+  --om-placeholder: #5b6472;
+  --om-bg: #f8f9fd;
+  --om-on-primary: #ffffff;
+  --om-on-accent: #1a1a1a;
+  --om-shadow: #7ca1d933;
+}
+
+@layer utilities {
+  .om-bg-page {
+    background-color: color-mix(in srgb, var(--om-bg) 55%, #f8f9fd);
+  }
+  .om-text-primary {
+    color: var(--om-primary);
+  }
+  .om-bg-primary {
+    background-color: var(--om-primary);
+    color: var(--om-on-primary);
+  }
+  .om-bg-accent {
+    background-color: var(--om-accent);
+    color: var(--om-on-accent);
+  }
+  .om-border-soft {
+    border-color: color-mix(in srgb, var(--om-primary-soft) 55%, transparent);
+  }
+  /* Ô nội dung / input: nền nhạt + chữ đen + placeholder đọc được */
+  .om-field {
+    background-color: var(--om-field);
+    color: var(--om-on-field);
+    color-scheme: light;
+  }
+  .om-field::placeholder {
+    color: var(--om-placeholder);
+    opacity: 1;
+  }
+  .om-field::-webkit-input-placeholder {
+    color: var(--om-placeholder);
+    opacity: 1;
+  }
+  .om-surface {
+    background-color: var(--om-tint);
+    color: var(--om-on-field);
+  }
+}
