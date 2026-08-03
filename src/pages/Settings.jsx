@@ -38,6 +38,23 @@ export default function Settings() {
   const [dangerBusy, setDangerBusy] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [dangerNote, setDangerNote] = useState('');
+
+  const namesMatch = (a, b) =>
+    (a || '').normalize('NFC').trim().replace(/\s+/g, ' ') ===
+    (b || '').normalize('NFC').trim().replace(/\s+/g, ' ');
+
+  const flashError = (msg) => {
+    setError(msg);
+    setDangerNote(msg);
+    // Mobile thường chặn window.confirm; alert vẫn hay hiện hơn
+    try {
+      window.alert(msg);
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     setName(space?.name || '');
@@ -130,22 +147,17 @@ export default function Settings() {
     navigate('/onboarding/space', { replace: true });
   };
 
-  /** Rời Space — xóa membership. Nếu bạn là người cuối thì xóa luôn Space. */
+  /** Rời Space — xác nhận trên UI (không dùng window.confirm — mobile hay chặn). */
   const leaveSpace = async () => {
     if (!sessionUserId || !spaceId) {
-      setError('Thiếu thông tin Space / thành viên.');
+      flashError('Thiếu thông tin Space / thành viên.');
       return;
     }
-    const ok = window.confirm(
-      role === 'user_1'
-        ? 'Rời Space này? Nếu còn partner, họ vẫn giữ Space. Bạn có thể tạo / join Space khác.'
-        : 'Rời Space này? Bạn có thể tạo hoặc join Space khác sau đó.'
-    );
-    if (!ok) return;
 
     setDangerBusy(true);
     setError('');
     setMessage('');
+    setDangerNote('Đang rời Space…');
     try {
       await supabase.from('push_subscriptions').delete().eq('member_id', sessionUserId);
 
@@ -181,9 +193,11 @@ export default function Settings() {
         }
       }
 
+      setShowLeaveConfirm(false);
+      setDangerNote('Đã rời Space.');
       await goCreateNewSpace();
     } catch (e) {
-      setError(
+      flashError(
         e.message?.includes('policy') || e.code === '42501'
           ? 'Thiếu quyền RLS. Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
           : e.message || 'Không rời được Space.'
@@ -193,31 +207,27 @@ export default function Settings() {
     }
   };
 
-  /** Xóa toàn bộ Space — chỉ user_1. */
+  /** Xóa toàn bộ Space — chỉ user_1. Không dùng window.confirm. */
   const deleteSpace = async () => {
     if (!spaceId) {
-      setError('Thiếu spaceId.');
+      flashError('Thiếu spaceId.');
       return;
     }
     if (role !== 'user_1') {
-      setError('Chỉ người tạo Space (User 1) mới được xóa.');
+      flashError('Chỉ người tạo Space (User 1) mới được xóa.');
       return;
     }
     const expected = (space?.name || '').trim();
-    if (!expected || confirmName.trim() !== expected) {
-      setError('Gõ đúng tên Space để xác nhận xóa.');
+    if (!expected || !namesMatch(confirmName, expected)) {
+      flashError(`Gõ đúng tên Space: «${expected}»`);
       return;
     }
-    const ok = window.confirm(
-      `Xóa vĩnh viễn Space «${expected}» và toàn bộ ảnh/thư/discovery? Không hoàn tác được.`
-    );
-    if (!ok) return;
 
     setDangerBusy(true);
     setError('');
     setMessage('');
+    setDangerNote('Đang xóa Space…');
     try {
-      // .select() để bắt case RLS chặn mà không báo lỗi (0 hàng)
       const { data: deleted, error: delErr } = await supabase
         .from('spaces')
         .delete()
@@ -231,9 +241,10 @@ export default function Settings() {
       }
       setShowDeleteConfirm(false);
       setConfirmName('');
+      setDangerNote('Đã xóa Space.');
       await goCreateNewSpace();
     } catch (e) {
-      setError(
+      flashError(
         e.message?.includes('policy') || e.code === '42501'
           ? 'Thiếu quyền RLS. Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
           : e.message || 'Không xóa được Space.'
@@ -440,16 +451,49 @@ export default function Settings() {
         <p className="text-sm text-gray-500 font-medium">
           Rời Space để tạo / join Space khác. Xóa Space chỉ dành cho người tạo — mất hết dữ liệu.
         </p>
+        {dangerNote && (
+          <p className="text-xs font-black text-rose-600 bg-rose-50 rounded-xl px-3 py-2">{dangerNote}</p>
+        )}
 
-        <button
-          type="button"
-          onClick={leaveSpace}
-          disabled={dangerBusy}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-rose-200 text-rose-600 py-3.5 text-xs font-black uppercase tracking-widest disabled:opacity-50"
-        >
-          <DoorOpen size={14} />
-          {dangerBusy ? 'Đang xử lý…' : 'Rời Space'}
-        </button>
+        {!showLeaveConfirm ? (
+          <button
+            type="button"
+            onClick={() => {
+              setShowLeaveConfirm(true);
+              setDangerNote('');
+              setError('');
+            }}
+            disabled={dangerBusy}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-rose-200 text-rose-600 py-3.5 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+          >
+            <DoorOpen size={14} />
+            Rời Space
+          </button>
+        ) : (
+          <div className="space-y-2 rounded-2xl border border-rose-100 bg-rose-50/50 p-3">
+            <p className="text-xs font-semibold text-rose-700">
+              Chắc chắn rời Space{role === 'user_1' && space?.name ? ` «${space.name}»` : ''}?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLeaveConfirm(false)}
+                disabled={dangerBusy}
+                className="flex-1 rounded-2xl border-2 border-gray-200 bg-white py-3 text-xs font-black uppercase tracking-widest text-gray-500"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={leaveSpace}
+                disabled={dangerBusy}
+                className="flex-1 rounded-2xl bg-rose-500 text-white py-3 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+              >
+                {dangerBusy ? 'Đang rời…' : 'Xác nhận rời'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {role === 'user_1' && (
           <div className="space-y-3 pt-2 border-t border-rose-100">
@@ -460,6 +504,7 @@ export default function Settings() {
                   setShowDeleteConfirm(true);
                   setConfirmName('');
                   setError('');
+                  setDangerNote('');
                 }}
                 disabled={dangerBusy}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-rose-500 text-white py-3.5 text-xs font-black uppercase tracking-widest disabled:opacity-50"
@@ -470,20 +515,26 @@ export default function Settings() {
             ) : (
               <>
                 <p className="text-xs font-semibold text-rose-600">
-                  Gõ <span className="font-black">«{space?.name}»</span> để xác nhận xóa vĩnh viễn:
+                  Gõ đúng <span className="font-black">«{space?.name}»</span> rồi bấm xóa (không popup thêm):
                 </p>
                 <input
                   value={confirmName}
                   onChange={(e) => setConfirmName(e.target.value)}
                   className="om-field w-full rounded-2xl border-2 border-rose-200 px-4 py-3 text-sm font-semibold outline-none focus:border-rose-400"
                   placeholder={space?.name || 'Tên Space'}
+                  autoCapitalize="off"
+                  autoCorrect="off"
                 />
+                <p className="text-[10px] text-gray-400 font-medium">
+                  Khớp tên: {namesMatch(confirmName, space?.name || '') ? '✓ đúng' : '✗ chưa đúng'}
+                </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setShowDeleteConfirm(false);
                       setConfirmName('');
+                      setDangerNote('');
                     }}
                     disabled={dangerBusy}
                     className="flex-1 rounded-2xl border-2 border-gray-200 py-3 text-xs font-black uppercase tracking-widest text-gray-500"
@@ -493,10 +544,10 @@ export default function Settings() {
                   <button
                     type="button"
                     onClick={deleteSpace}
-                    disabled={dangerBusy || confirmName.trim() !== (space?.name || '').trim()}
-                    className="flex-1 rounded-2xl bg-rose-600 text-white py-3 text-xs font-black uppercase tracking-widest disabled:opacity-40"
+                    disabled={dangerBusy}
+                    className="flex-1 rounded-2xl bg-rose-600 text-white py-3 text-xs font-black uppercase tracking-widest disabled:opacity-50"
                   >
-                    Xác nhận xóa
+                    {dangerBusy ? 'Đang xóa…' : 'Xóa ngay'}
                   </button>
                 </div>
               </>
