@@ -132,7 +132,10 @@ export default function Settings() {
 
   /** Rời Space — xóa membership. Nếu bạn là người cuối thì xóa luôn Space. */
   const leaveSpace = async () => {
-    if (!sessionUserId || !spaceId) return;
+    if (!sessionUserId || !spaceId) {
+      setError('Thiếu thông tin Space / thành viên.');
+      return;
+    }
     const ok = window.confirm(
       role === 'user_1'
         ? 'Rời Space này? Nếu còn partner, họ vẫn giữ Space. Bạn có thể tạo / join Space khác.'
@@ -153,11 +156,29 @@ export default function Settings() {
       if (countErr) throw countErr;
 
       if ((count ?? 0) <= 1) {
-        const { error: delSpaceErr } = await supabase.from('spaces').delete().eq('id', spaceId);
+        const { data: deleted, error: delSpaceErr } = await supabase
+          .from('spaces')
+          .delete()
+          .eq('id', spaceId)
+          .select('id');
         if (delSpaceErr) throw delSpaceErr;
+        if (!deleted?.length) {
+          throw new Error(
+            'Không xóa được Space (0 hàng). Chạy lại scripts/sql_space_leave_delete.sql trên Supabase.'
+          );
+        }
       } else {
-        const { error: memErr } = await supabase.from('members').delete().eq('id', sessionUserId);
+        const { data: left, error: memErr } = await supabase
+          .from('members')
+          .delete()
+          .eq('id', sessionUserId)
+          .select('id');
         if (memErr) throw memErr;
+        if (!left?.length) {
+          throw new Error(
+            'Không rời được (0 hàng). Chạy lại scripts/sql_space_leave_delete.sql trên Supabase.'
+          );
+        }
       }
 
       await goCreateNewSpace();
@@ -174,7 +195,14 @@ export default function Settings() {
 
   /** Xóa toàn bộ Space — chỉ user_1. */
   const deleteSpace = async () => {
-    if (role !== 'user_1' || !spaceId) return;
+    if (!spaceId) {
+      setError('Thiếu spaceId.');
+      return;
+    }
+    if (role !== 'user_1') {
+      setError('Chỉ người tạo Space (User 1) mới được xóa.');
+      return;
+    }
     const expected = (space?.name || '').trim();
     if (!expected || confirmName.trim() !== expected) {
       setError('Gõ đúng tên Space để xác nhận xóa.');
@@ -189,8 +217,18 @@ export default function Settings() {
     setError('');
     setMessage('');
     try {
-      const { error: delErr } = await supabase.from('spaces').delete().eq('id', spaceId);
+      // .select() để bắt case RLS chặn mà không báo lỗi (0 hàng)
+      const { data: deleted, error: delErr } = await supabase
+        .from('spaces')
+        .delete()
+        .eq('id', spaceId)
+        .select('id');
       if (delErr) throw delErr;
+      if (!deleted?.length) {
+        throw new Error(
+          'Không xóa được Space (RLS chặn / chưa có policy DELETE). Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
+        );
+      }
       setShowDeleteConfirm(false);
       setConfirmName('');
       await goCreateNewSpace();
