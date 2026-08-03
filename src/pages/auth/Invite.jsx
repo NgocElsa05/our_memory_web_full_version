@@ -44,16 +44,19 @@ export default function Invite() {
       setLoading(true);
       setError('');
       try {
+        const normalized = code.toUpperCase();
         const { data, error: err } = await supabase
           .from('spaces')
           .select('id, name, met_on, together_since, theme_key, invite_code')
-          .eq('invite_code', code)
+          .eq('invite_code', normalized)
           .maybeSingle();
         if (err) throw err;
         if (!data) {
           if (!cancelled) {
             setSpace(null);
-            setError('Link mời không dùng được. Xin link mới từ người ấy nhé.');
+            setError(
+              'Không tìm thấy Space với mã này. Kiểm tra: (1) chạy scripts/sql_spaces_invite_select.sql trên Supabase, (2) Space chưa bị xóa/rời hết, (3) copy đúng link từ Cài đặt.'
+            );
           }
           return;
         }
@@ -74,7 +77,7 @@ export default function Invite() {
         if (!cancelled) {
           setError(
             e.message?.includes('permission') || e.code === '42501'
-              ? 'Tạm thời chưa xem được lời mời (cần mở quyền đọc theo mã mời trên Supabase).'
+              ? 'Tạm thời chưa xem được lời mời — chạy scripts/sql_spaces_invite_select.sql trên Supabase rồi thử lại.'
               : e.message || 'Không tải được lời mời.'
           );
         }
