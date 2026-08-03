@@ -5,6 +5,7 @@ import { Send, Heart, MailOpen, Inbox, SendHorizontal, Trash2, Sparkles } from '
 import { useSession } from '../context/SessionContext';
 import { isLetterFromMe } from '../lib/loveLetterIdentity';
 import { useProfileNicknames } from '../hooks/useProfiles';
+import { notifyPartner } from '../lib/push';
 import {
   useLoveLetters,
   LOVE_LETTERS_QUERY_KEY,
@@ -79,6 +80,13 @@ const Mailbox = () => {
     if (!error) {
       setNewLetter('');
       await invalidateLetters();
+      void notifyPartner({
+        targetMemberId: partnerId,
+        title: 'Thư mới 💌',
+        body: `${tabNames[sessionUserId] || 'Người ấy'} vừa gửi một lời thương cho bạn`,
+        url: '/mailbox',
+        tag: 'love-letter',
+      });
       alert("Đã gửi yêu thương thành công! ✨");
     } else {
       alert(error.message);

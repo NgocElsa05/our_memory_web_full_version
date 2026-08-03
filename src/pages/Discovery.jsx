@@ -7,6 +7,7 @@ import { useProfileNicknames } from '../hooks/useProfiles';
 import { uploadToCloudinary } from '../lib/cloudinary';
 import { prepareImageFileForUpload } from '../lib/resizeImageForUpload';
 import { cloudinaryAvatar, cloudinaryThumb } from '../lib/cloudinaryUrl';
+import { notifyPartner } from '../lib/push';
 import {
   ShieldCheck, ShieldAlert, Send,
   Edit2, Check, Star, X, Trash2,
@@ -274,6 +275,17 @@ const Discovery = () => {
       },
     ]);
     if (error) alert(error.message);
+    else {
+      if (currentId !== sessionUserId) {
+        void notifyPartner({
+          targetMemberId: currentId,
+          title: 'Phát hiện mới ✨',
+          body: `${nickByMemberId[sessionUserId] || 'Partner'} vừa viết điều gì đó về bạn`,
+          url: '/discovery',
+          tag: 'discovery',
+        });
+      }
+    }
     setNewFact('');
     await refetchDiscoveries();
     setLoading(false);
@@ -295,6 +307,20 @@ const Discovery = () => {
       setReplyingTo(null);
       setReplyText('');
       await refetchDiscoveries();
+      const fact = discoveries.find((d) => d.id === factId);
+      if (fact) {
+        const target =
+          fact.author_id === sessionUserId ? fact.subject_id : fact.author_id;
+        if (target && target !== sessionUserId) {
+          void notifyPartner({
+            targetMemberId: target,
+            title: 'Comment mới 💬',
+            body: `${nickByMemberId[sessionUserId] || 'Partner'} vừa phản hồi một phát hiện`,
+            url: '/discovery',
+            tag: 'discovery-comment',
+          });
+        }
+      }
     } else alert('Lỗi: ' + error.message);
     setLoading(false);
   };

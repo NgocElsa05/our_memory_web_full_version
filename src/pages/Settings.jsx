@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, CalendarHeart, Type, LogOut, Check, Copy } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, CalendarHeart, Type, LogOut, Check, Copy, Bell } from 'lucide-react';
 import { supabase } from '../supabase';
 import { useSession } from '../context/SessionContext';
 import { useAuth } from '../context/AuthContext';
 import { THEME_PALETTES, getThemeByKey, DEFAULT_THEME_KEY, getThemeCssVars } from '../lib/themes';
 import { inviteUrl } from '../lib/invite';
+import { enablePushNotifications, isPushSupported } from '../lib/push';
 
 export default function Settings() {
-  const { space, spaceId, refresh, role } = useSession();
+  const { space, spaceId, refresh, role, sessionUserId } = useSession();
   const { signOut } = useAuth();
 
   const [name, setName] = useState(space?.name || '');
@@ -20,6 +21,8 @@ export default function Settings() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState('');
 
   useEffect(() => {
     setName(space?.name || '');
@@ -85,6 +88,19 @@ export default function Settings() {
     await navigator.clipboard.writeText(inviteUrl(space.invite_code));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const enablePush = async () => {
+    setPushBusy(true);
+    setPushMsg('');
+    try {
+      await enablePushNotifications({ memberId: sessionUserId, spaceId });
+      setPushMsg('Đã bật thông báo trên thiết bị này.');
+    } catch (e) {
+      setPushMsg(e.message || 'Không bật được thông báo.');
+    } finally {
+      setPushBusy(false);
+    }
   };
 
   return (
@@ -219,6 +235,31 @@ export default function Settings() {
             );
           })}
         </div>
+      </section>
+
+      {/* Push notifications */}
+      <section className="bg-white rounded-[30px] border border-[color-mix(in_srgb,var(--om-primary-soft)_25%,transparent)] shadow-sm p-6 space-y-3">
+        <h2 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--om-primary)' }}>
+          <Bell size={14} /> Thông báo
+        </h2>
+        <p className="text-sm text-gray-500 font-medium">
+          Bật để nhận thông báo khi có thư mới hoặc comment Discovery (cần chạy trên link Vercel / HTTPS, và cả hai cùng bật).
+        </p>
+        {!isPushSupported() && (
+          <p className="text-xs font-semibold text-amber-700">
+            Trình duyệt / thiết bị này không hỗ trợ Web Push (iOS cần «Thêm vào MH chính» + iOS 16.4+).
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={enablePush}
+          disabled={pushBusy || !isPushSupported()}
+          className="w-full rounded-2xl py-3 text-xs font-black uppercase tracking-widest text-[var(--om-on-primary)] disabled:opacity-50"
+          style={{ background: 'var(--om-primary)' }}
+        >
+          {pushBusy ? 'Đang bật…' : 'Bật thông báo trên máy này'}
+        </button>
+        {pushMsg && <p className="text-xs font-semibold text-gray-600">{pushMsg}</p>}
       </section>
 
       {/* Invite */}
