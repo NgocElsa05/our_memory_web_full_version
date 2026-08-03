@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Settings as SettingsIcon, Palette, CalendarHeart, Type, LogOut, Check, Copy, Bell } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Settings as SettingsIcon,
+  Palette,
+  CalendarHeart,
+  Type,
+  LogOut,
+  Check,
+  Copy,
+  Bell,
+  DoorOpen,
+  Trash2,
+} from 'lucide-react';
 import { supabase } from '../supabase';
 import { useSession } from '../context/SessionContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +22,7 @@ import { enablePushNotifications, isPushSupported } from '../lib/push';
 export default function Settings() {
   const { space, spaceId, refresh, role, sessionUserId } = useSession();
   const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const [name, setName] = useState(space?.name || '');
   const [togetherSince, setTogetherSince] = useState(space?.together_since || '');
@@ -23,6 +35,9 @@ export default function Settings() {
   const [copied, setCopied] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMsg, setPushMsg] = useState('');
+  const [dangerBusy, setDangerBusy] = useState(false);
+  const [confirmName, setConfirmName] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     setName(space?.name || '');
@@ -100,6 +115,93 @@ export default function Settings() {
       setPushMsg(e.message || 'Không bật được thông báo.');
     } finally {
       setPushBusy(false);
+    }
+  };
+
+  const clearSpaceLocalFlags = (id) => {
+    if (!id) return;
+    sessionStorage.removeItem(`theme_done_${id}`);
+    sessionStorage.removeItem(`preview_done_${id}`);
+  };
+
+  const goCreateNewSpace = async () => {
+    clearSpaceLocalFlags(spaceId);
+    await refresh();
+    navigate('/onboarding/space', { replace: true });
+  };
+
+  /** Rời Space — xóa membership. Nếu bạn là người cuối thì xóa luôn Space. */
+  const leaveSpace = async () => {
+    if (!sessionUserId || !spaceId) return;
+    const ok = window.confirm(
+      role === 'user_1'
+        ? 'Rời Space này? Nếu còn partner, họ vẫn giữ Space. Bạn có thể tạo / join Space khác.'
+        : 'Rời Space này? Bạn có thể tạo hoặc join Space khác sau đó.'
+    );
+    if (!ok) return;
+
+    setDangerBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await supabase.from('push_subscriptions').delete().eq('member_id', sessionUserId);
+
+      const { count, error: countErr } = await supabase
+        .from('members')
+        .select('id', { count: 'exact', head: true })
+        .eq('space_id', spaceId);
+      if (countErr) throw countErr;
+
+      if ((count ?? 0) <= 1) {
+        const { error: delSpaceErr } = await supabase.from('spaces').delete().eq('id', spaceId);
+        if (delSpaceErr) throw delSpaceErr;
+      } else {
+        const { error: memErr } = await supabase.from('members').delete().eq('id', sessionUserId);
+        if (memErr) throw memErr;
+      }
+
+      await goCreateNewSpace();
+    } catch (e) {
+      setError(
+        e.message?.includes('policy') || e.code === '42501'
+          ? 'Thiếu quyền RLS. Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
+          : e.message || 'Không rời được Space.'
+      );
+    } finally {
+      setDangerBusy(false);
+    }
+  };
+
+  /** Xóa toàn bộ Space — chỉ user_1. */
+  const deleteSpace = async () => {
+    if (role !== 'user_1' || !spaceId) return;
+    const expected = (space?.name || '').trim();
+    if (!expected || confirmName.trim() !== expected) {
+      setError('Gõ đúng tên Space để xác nhận xóa.');
+      return;
+    }
+    const ok = window.confirm(
+      `Xóa vĩnh viễn Space «${expected}» và toàn bộ ảnh/thư/discovery? Không hoàn tác được.`
+    );
+    if (!ok) return;
+
+    setDangerBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const { error: delErr } = await supabase.from('spaces').delete().eq('id', spaceId);
+      if (delErr) throw delErr;
+      setShowDeleteConfirm(false);
+      setConfirmName('');
+      await goCreateNewSpace();
+    } catch (e) {
+      setError(
+        e.message?.includes('policy') || e.code === '42501'
+          ? 'Thiếu quyền RLS. Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
+          : e.message || 'Không xóa được Space.'
+      );
+    } finally {
+      setDangerBusy(false);
     }
   };
 
@@ -283,7 +385,7 @@ export default function Settings() {
       <button
         type="button"
         onClick={save}
-        disabled={saving}
+        disabled={saving || dangerBusy}
         className="w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest shadow-lg active:scale-[0.98] disabled:opacity-50"
         style={{
           background: 'var(--om-primary)',
@@ -294,9 +396,81 @@ export default function Settings() {
         {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
       </button>
 
+      {/* Danger zone */}
+      <section className="bg-white rounded-[30px] border border-rose-200 shadow-sm p-6 space-y-4">
+        <h2 className="text-xs font-black uppercase tracking-widest text-rose-500">Nguy hiểm</h2>
+        <p className="text-sm text-gray-500 font-medium">
+          Rời Space để tạo / join Space khác. Xóa Space chỉ dành cho người tạo — mất hết dữ liệu.
+        </p>
+
+        <button
+          type="button"
+          onClick={leaveSpace}
+          disabled={dangerBusy}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-rose-200 text-rose-600 py-3.5 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+        >
+          <DoorOpen size={14} />
+          {dangerBusy ? 'Đang xử lý…' : 'Rời Space'}
+        </button>
+
+        {role === 'user_1' && (
+          <div className="space-y-3 pt-2 border-t border-rose-100">
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteConfirm(true);
+                  setConfirmName('');
+                  setError('');
+                }}
+                disabled={dangerBusy}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-rose-500 text-white py-3.5 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+              >
+                <Trash2 size={14} />
+                Xóa Space
+              </button>
+            ) : (
+              <>
+                <p className="text-xs font-semibold text-rose-600">
+                  Gõ <span className="font-black">«{space?.name}»</span> để xác nhận xóa vĩnh viễn:
+                </p>
+                <input
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                  className="om-field w-full rounded-2xl border-2 border-rose-200 px-4 py-3 text-sm font-semibold outline-none focus:border-rose-400"
+                  placeholder={space?.name || 'Tên Space'}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setConfirmName('');
+                    }}
+                    disabled={dangerBusy}
+                    className="flex-1 rounded-2xl border-2 border-gray-200 py-3 text-xs font-black uppercase tracking-widest text-gray-500"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deleteSpace}
+                    disabled={dangerBusy || confirmName.trim() !== (space?.name || '').trim()}
+                    className="flex-1 rounded-2xl bg-rose-600 text-white py-3 text-xs font-black uppercase tracking-widest disabled:opacity-40"
+                  >
+                    Xác nhận xóa
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </section>
+
       <button
         type="button"
         onClick={() => signOut()}
+        disabled={dangerBusy}
         className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-[color-mix(in_srgb,var(--om-accent)_50%,transparent)] text-[color-mix(in_srgb,var(--om-accent)_45%,#3a1a28)] py-3.5 text-xs font-black uppercase tracking-widest"
       >
         <LogOut size={14} />

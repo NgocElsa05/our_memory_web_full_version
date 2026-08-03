@@ -12,7 +12,7 @@ import { supabase } from '../../supabase';
 import { generateInviteCode } from '../../lib/invite';
 
 export default function CreateSpace() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { refresh, member } = useSpace();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -93,6 +93,16 @@ export default function CreateSpace() {
           {loading ? 'Đang tạo…' : 'Tiếp tục'}
         </button>
       </form>
+      <button
+        type="button"
+        className="mt-4 w-full text-xs font-bold text-gray-400 hover:text-[var(--om-primary)]"
+        onClick={async () => {
+          await signOut();
+          navigate('/welcome', { replace: true });
+        }}
+      >
+        Không phải bạn? Đăng xuất
+      </button>
     </AuthLayout>
   );
 }

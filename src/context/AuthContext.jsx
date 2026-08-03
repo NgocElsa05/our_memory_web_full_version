@@ -10,12 +10,33 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
+
+    const syncSession = async () => {
+      // getUser() gọi server — nếu user đã bị xóa ở Authentication thì session local sẽ fail
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (!mounted) return;
+
+      if (userErr || !userData?.user) {
+        setSession(null);
+        setLoading(false);
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       setSession(data.session ?? null);
       setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    };
+
+    void syncSession();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setLoading(false);
+        return;
+      }
       setSession(next);
       setLoading(false);
     });
