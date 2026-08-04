@@ -48,12 +48,17 @@ export default function Settings() {
   const flashError = (msg) => {
     setError(msg);
     setDangerNote(msg);
-    // Mobile thường chặn window.confirm; alert vẫn hay hiện hơn
     try {
       window.alert(msg);
     } catch {
       /* ignore */
     }
+  };
+
+  const formatSbError = (e, fallback) => {
+    if (!e) return fallback;
+    const parts = [e.message, e.details, e.hint, e.code].filter(Boolean);
+    return parts.length ? parts.join(' — ') : fallback;
   };
 
   useEffect(() => {
@@ -147,7 +152,36 @@ export default function Settings() {
     navigate('/onboarding/space', { replace: true });
   };
 
-  /** Rời Space — xác nhận trên UI (không dùng window.confirm — mobile hay chặn). */
+  /** Sau DELETE + CASCADE, .select() RETURNING hay ra [] dù đã xóa — verify bằng cách đọc lại. */
+  const assertSpaceGone = async (id) => {
+    const { data, error } = await supabase
+      .from('spaces')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      throw new Error(
+        'Space vẫn còn sau khi xóa. Kiểm tra policy DELETE (sql_space_leave_delete.sql) và role user_1 trên bảng members.'
+      );
+    }
+  };
+
+  const assertMembershipGone = async (memberId) => {
+    const { data, error } = await supabase
+      .from('members')
+      .select('id')
+      .eq('id', memberId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      throw new Error(
+        'Vẫn còn membership. Chạy lại scripts/sql_space_leave_delete.sql (members_delete).'
+      );
+    }
+  };
+
+  /** Rời Space — RPC leave_my_space (tránh DELETE 500 / RLS recursion). */
   const leaveSpace = async () => {
     if (!sessionUserId || !spaceId) {
       flashError('Thiếu thông tin Space / thành viên.');
@@ -159,55 +193,24 @@ export default function Settings() {
     setMessage('');
     setDangerNote('Đang rời Space…');
     try {
-      await supabase.from('push_subscriptions').delete().eq('member_id', sessionUserId);
-
-      const { count, error: countErr } = await supabase
-        .from('members')
-        .select('id', { count: 'exact', head: true })
-        .eq('space_id', spaceId);
-      if (countErr) throw countErr;
-
-      if ((count ?? 0) <= 1) {
-        const { data: deleted, error: delSpaceErr } = await supabase
-          .from('spaces')
-          .delete()
-          .eq('id', spaceId)
-          .select('id');
-        if (delSpaceErr) throw delSpaceErr;
-        if (!deleted?.length) {
-          throw new Error(
-            'Không xóa được Space (0 hàng). Chạy lại scripts/sql_space_leave_delete.sql trên Supabase.'
-          );
-        }
-      } else {
-        const { data: left, error: memErr } = await supabase
-          .from('members')
-          .delete()
-          .eq('id', sessionUserId)
-          .select('id');
-        if (memErr) throw memErr;
-        if (!left?.length) {
-          throw new Error(
-            'Không rời được (0 hàng). Chạy lại scripts/sql_space_leave_delete.sql trên Supabase.'
-          );
-        }
-      }
-
+      const { error: rpcErr } = await supabase.rpc('leave_my_space', { p_space_id: spaceId });
+      if (rpcErr) throw rpcErr;
+      await assertSpaceGone(spaceId).catch(async () => {
+        // Có thể chỉ rời membership, space còn nếu còn partner
+        await assertMembershipGone(sessionUserId);
+      });
       setShowLeaveConfirm(false);
       setDangerNote('Đã rời Space.');
       await goCreateNewSpace();
     } catch (e) {
-      flashError(
-        e.message?.includes('policy') || e.code === '42501'
-          ? 'Thiếu quyền RLS. Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
-          : e.message || 'Không rời được Space.'
-      );
+      console.error('[leaveSpace]', e);
+      flashError(formatSbError(e, 'Không rời được Space.'));
     } finally {
       setDangerBusy(false);
     }
   };
 
-  /** Xóa toàn bộ Space — chỉ user_1. Không dùng window.confirm. */
+  /** Xóa toàn bộ Space — RPC delete_my_space. */
   const deleteSpace = async () => {
     if (!spaceId) {
       flashError('Thiếu spaceId.');
@@ -228,27 +231,16 @@ export default function Settings() {
     setMessage('');
     setDangerNote('Đang xóa Space…');
     try {
-      const { data: deleted, error: delErr } = await supabase
-        .from('spaces')
-        .delete()
-        .eq('id', spaceId)
-        .select('id');
-      if (delErr) throw delErr;
-      if (!deleted?.length) {
-        throw new Error(
-          'Không xóa được Space (RLS chặn / chưa có policy DELETE). Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
-        );
-      }
+      const { error: rpcErr } = await supabase.rpc('delete_my_space', { p_space_id: spaceId });
+      if (rpcErr) throw rpcErr;
+      await assertSpaceGone(spaceId);
       setShowDeleteConfirm(false);
       setConfirmName('');
       setDangerNote('Đã xóa Space.');
       await goCreateNewSpace();
     } catch (e) {
-      flashError(
-        e.message?.includes('policy') || e.code === '42501'
-          ? 'Thiếu quyền RLS. Chạy scripts/sql_space_leave_delete.sql trên Supabase rồi thử lại.'
-          : e.message || 'Không xóa được Space.'
-      );
+      console.error('[deleteSpace]', e);
+      flashError(formatSbError(e, 'Không xóa được Space.'));
     } finally {
       setDangerBusy(false);
     }
