@@ -14,6 +14,8 @@ import {
   Plus, X, Trash2, Download, 
   Sparkles, Heart, ArrowLeft
 } from 'lucide-react';
+import CuteLoader from '../components/CuteLoader';
+import { LOADING_COPY } from '../lib/loadingCopy';
 
 const Gallery = () => {
   const { sessionUserId, spaceId } = useSession();
@@ -125,6 +127,13 @@ const Gallery = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-4 pb-24 animate-fade-in font-sans">
+      {uploading && (
+        <CuteLoader
+          variant="overlay"
+          motion="fluff"
+          message={LOADING_COPY.AP_GALLERY}
+        />
+      )}
       
       <style>
         {`

@@ -10,6 +10,7 @@ import { useSpace } from '../../context/SpaceContext';
 import { supabase } from '../../supabase';
 import { uploadToCloudinary } from '../../lib/cloudinary';
 import { prepareImageFileForUpload } from '../../lib/resizeImageForUpload';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function CreateProfile() {
   const { member, space, refresh, profile } = useSpace();
@@ -111,7 +112,7 @@ export default function CreateProfile() {
           />
         </Field>
         <button type="submit" className={primaryBtnClass} disabled={loading}>
-          {loading ? 'Đang lưu…' : 'Vào Space'}
+          {loading ? LOADING_COPY.AO_PROFILE : 'Vào Space'}
         </button>
       </form>
     </AuthLayout>

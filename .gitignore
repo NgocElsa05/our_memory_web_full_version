@@ -26,6 +26,7 @@ dist-ssr
 # Internal docs — keep out of remote (README stays tracked)
 *.md
 !README.md
+!LOADING_ANIMATIONS.md
 
 # Vercel CLI (project link; keep out of git)
 .vercel

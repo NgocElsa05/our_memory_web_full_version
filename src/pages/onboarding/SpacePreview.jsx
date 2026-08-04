@@ -3,6 +3,8 @@ import AuthLayout, { primaryBtnClass } from '../../components/auth/AuthLayout';
 import { useSpace } from '../../context/SpaceContext';
 import { formatViDate } from '../../lib/invite';
 import { getThemeByKey } from '../../lib/themes';
+import CuteLoader from '../../components/CuteLoader';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function SpacePreview() {
   const { space, markPreviewDone, member } = useSpace();
@@ -22,7 +24,7 @@ export default function SpacePreview() {
   return (
     <AuthLayout title="Chào mừng vào Space" subtitle="Đây là không gian hai bạn sẽ dùng chung">
       {!space ? (
-        <p className="text-sm font-semibold text-gray-500 text-center">Đang tải…</p>
+        <CuteLoader message={LOADING_COPY.AO_PREVIEW} />
       ) : (
         <div className="space-y-4">
           <div className="rounded-2xl om-field border border-gray-200 p-4">

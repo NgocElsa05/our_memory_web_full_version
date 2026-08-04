@@ -14,6 +14,8 @@ import {
   savePendingInvite,
 } from '../../lib/invite';
 import { getThemeByKey } from '../../lib/themes';
+import CuteLoader from '../../components/CuteLoader';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function Invite() {
   const { inviteCode } = useParams();
@@ -138,7 +140,7 @@ export default function Invite() {
   return (
     <AuthLayout title="Lời mời vào Space" subtitle={code ? `Mã: ${code}` : ''}>
       <ErrorBox message={error} />
-      {loading && <p className="text-sm font-semibold text-gray-500 text-center">Đang tải…</p>}
+      {loading && <CuteLoader message={LOADING_COPY.AO_INVITE_FETCH} />}
 
       {!loading && space && (
         <div className="space-y-4">
@@ -194,7 +196,7 @@ export default function Invite() {
               onClick={join}
               disabled={joining || memberCount >= 2 || Boolean(error && !space)}
             >
-              {joining ? 'Đang tham gia…' : `Tham gia “${space.name}”`}
+              {joining ? LOADING_COPY.AO_INVITE_JOIN : `Tham gia “${space.name}”`}
             </button>
           )}
         </div>

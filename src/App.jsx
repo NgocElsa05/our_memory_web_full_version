@@ -21,15 +21,13 @@ import Mailbox from './pages/Mailbox';
 import Discovery from './pages/Discovery';
 import Settings from './pages/Settings';
 import MusicPlayer from './components/MusicPlayer';
+import CuteLoader from './components/CuteLoader';
 import { useUnreadLettersCount } from './hooks/useUnreadLettersCount';
 import { getThemeByKey, DEFAULT_THEME_KEY, getThemeCssVars } from './lib/themes';
+import { LOADING_COPY } from './lib/loadingCopy';
 
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen om-bg-page flex items-center justify-center">
-      <p className="text-sm font-black uppercase tracking-widest om-text-primary">Đang tải…</p>
-    </div>
-  );
+function LoadingScreen({ message = LOADING_COPY.FS_AUTH }) {
+  return <CuteLoader variant="fullscreen" message={message} />;
 }
 
 function stepPath(step) {
@@ -54,8 +52,9 @@ function stepPath(step) {
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
   const { onboardingStep, loading: spaceLoading } = useSpace();
-  if (loading || (user && spaceLoading) || (user && onboardingStep === 'loading')) {
-    return <LoadingScreen />;
+  if (loading) return <LoadingScreen message={LOADING_COPY.FS_AUTH} />;
+  if ((user && spaceLoading) || (user && onboardingStep === 'loading')) {
+    return <LoadingScreen message={LOADING_COPY.FS_SPACE} />;
   }
   if (user) {
     const to = stepPath(onboardingStep) || '/onboarding/space';
@@ -67,7 +66,7 @@ function PublicOnly({ children }) {
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingScreen message={LOADING_COPY.FS_AUTH} />;
   if (!user) {
     return <Navigate to="/welcome" replace state={{ from: location.pathname }} />;
   }
@@ -76,7 +75,9 @@ function RequireAuth({ children }) {
 
 function OnboardingGate({ expect, children }) {
   const { onboardingStep, loading, error } = useSpace();
-  if (loading || onboardingStep === 'loading') return <LoadingScreen />;
+  if (loading || onboardingStep === 'loading') {
+    return <LoadingScreen message={LOADING_COPY.FS_SPACE} />;
+  }
   if (error) {
     return (
       <div className="min-h-screen bg-[var(--om-tint)] flex flex-col items-center justify-center px-6 text-center">

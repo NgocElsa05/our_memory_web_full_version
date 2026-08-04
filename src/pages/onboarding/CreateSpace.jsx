@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSpace } from '../../context/SpaceContext';
 import { supabase } from '../../supabase';
 import { generateInviteCode } from '../../lib/invite';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function CreateSpace() {
   const { user, signOut } = useAuth();
@@ -90,7 +91,7 @@ export default function CreateSpace() {
           />
         </Field>
         <button type="submit" className={primaryBtnClass} disabled={loading}>
-          {loading ? 'Đang tạo…' : 'Tiếp tục'}
+          {loading ? LOADING_COPY.AO_CREATE_SPACE : 'Tiếp tục'}
         </button>
       </form>
       <button

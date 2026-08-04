@@ -6,12 +6,13 @@ import { useGalleryMedia } from '../hooks/useGalleryMedia';
 import { useSession } from '../context/SessionContext';
 import { cloudinaryAvatar, cloudinaryThumb } from '../lib/cloudinaryUrl';
 import { daysTogether, formatViDate } from '../lib/invite';
+import { LOADING_COPY } from '../lib/loadingCopy';
 
 const Home = () => {
   const navigate = useNavigate();
   const { space } = useSession();
   const [currentSong, setCurrentSong] = useState(() => {
-    return localStorage.getItem('currentSongTitle') || 'Đang tải giai điệu...';
+    return localStorage.getItem('currentSongTitle') || LOADING_COPY.AP_SONG_HOME;
   });
 
   const { data: galleryItems = [] } = useGalleryMedia();

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../supabase';
 import { useSpace } from '../../context/SpaceContext';
+import CuteLoader from '../../components/CuteLoader';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 const NEXT_KEY = 'auth_oauth_next';
 
@@ -46,7 +48,7 @@ export default function AuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { onboardingStep, loading: spaceLoading, refresh } = useSpace();
-  const [message, setMessage] = useState('Đang đăng nhập bằng Google…');
+  const [message, setMessage] = useState(LOADING_COPY.FS_GOOGLE);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export default function AuthCallback() {
         await refresh();
         if (cancelled) return;
         clearOAuthNext();
-        setMessage('Đăng nhập thành công, đang vào Space…');
+        setMessage(LOADING_COPY.FS_ENTER_SPACE);
         return;
       }
 
@@ -107,7 +109,7 @@ export default function AuthCallback() {
           await refresh();
           if (cancelled) return;
           clearOAuthNext();
-          setMessage('Đăng nhập thành công, đang vào Space…');
+          setMessage(LOADING_COPY.FS_ENTER_SPACE);
           return;
         }
       }
@@ -137,7 +139,7 @@ export default function AuthCallback() {
         await refresh();
         if (cancelled) return;
         clearOAuthNext();
-        setMessage('Đăng nhập thành công, đang vào Space…');
+        setMessage(LOADING_COPY.FS_ENTER_SPACE);
         return;
       }
 
@@ -179,16 +181,10 @@ export default function AuthCallback() {
   }, [onboardingStep, spaceLoading, navigate, failed]);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-6 text-center">
-      <p
-        className={`text-sm font-black max-w-md ${
-          failed
-            ? 'text-rose-500 font-semibold normal-case tracking-normal'
-            : 'uppercase tracking-widest text-gray-600'
-        }`}
-      >
-        {message}
-      </p>
-    </div>
+    <CuteLoader
+      variant="fullscreen"
+      message={failed && !message ? LOADING_COPY.FS_OAUTH_FAIL : message}
+      error={failed}
+    />
   );
 }

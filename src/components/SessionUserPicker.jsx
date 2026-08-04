@@ -1,5 +1,7 @@
 import { Heart } from 'lucide-react';
 import { useProfileNicknames } from '../hooks/useProfiles';
+import CuteLoader from './CuteLoader';
+import { LOADING_COPY } from '../lib/loadingCopy';
 
 const SessionUserPicker = ({ onPick }) => {
   const { tabNames: labels, isLoading } = useProfileNicknames();
@@ -10,7 +12,7 @@ const SessionUserPicker = ({ onPick }) => {
       <h2 className="text-xl font-black text-gray-800 mb-10 tracking-tight">Hôm nay là ai đây?</h2>
 
       {isLoading ? (
-        <div className="text-sm text-[var(--om-primary-soft)] font-bold animate-pulse">Đang tải biệt danh…</div>
+        <CuteLoader message={LOADING_COPY.AP_NICKNAMES} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
           <button

@@ -9,6 +9,7 @@ import AuthLayout, {
 } from '../../components/auth/AuthLayout';
 import { useSpace } from '../../context/SpaceContext';
 import { supabase } from '../../supabase';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function OnboardingDates() {
   const { space, refresh, member } = useSpace();
@@ -97,7 +98,7 @@ export default function OnboardingDates() {
         </button>
 
         <button type="submit" className={primaryBtnClass} disabled={loading}>
-          {loading ? 'Đang lưu…' : 'Tiếp tục'}
+          {loading ? LOADING_COPY.AO_DATES : 'Tiếp tục'}
         </button>
       </form>
     </AuthLayout>

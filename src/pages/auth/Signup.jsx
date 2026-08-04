@@ -10,6 +10,7 @@ import AuthLayout, {
 } from '../../components/auth/AuthLayout';
 import { useAuth } from '../../context/AuthContext';
 import { savePendingInvite } from '../../lib/invite';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function Signup() {
   const { signUpWithEmail, signInWithEmail, signInWithGoogle } = useAuth();
@@ -140,7 +141,7 @@ export default function Signup() {
           />
         </Field>
         <button type="submit" className={primaryBtnClass} disabled={loading}>
-          {loading ? 'Đang tạo…' : 'Tiếp tục'}
+          {loading ? LOADING_COPY.AO_SIGNUP : 'Tiếp tục'}
         </button>
       </form>
 

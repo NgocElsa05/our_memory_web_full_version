@@ -13,6 +13,7 @@ import {
   Edit2, Check, Star, X, Trash2,
   Camera, UserRoundPlus,
 } from 'lucide-react';
+import { LOADING_COPY } from '../lib/loadingCopy';
 
 const PARTNER_PENDING_ID = '__partner_pending__';
 
@@ -76,8 +77,10 @@ const MoodCell = ({ cellKey, label, imageUrl, editing, onPickFile, uploading }) 
       )}
 
       {uploading === cellKey && (
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center px-2">
+          <p className="text-[10px] font-black text-white text-center leading-snug">
+            {LOADING_COPY.AP_MOOD}
+          </p>
         </div>
       )}
 
@@ -530,8 +533,10 @@ const Discovery = () => {
 
             {/* Spinner */}
             {uploadingCell === 'avatar_url' && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent" />
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center px-3">
+                <p className="text-xs font-black text-white text-center">
+                  {LOADING_COPY.AP_DISCOVERY}
+                </p>
               </div>
             )}
 

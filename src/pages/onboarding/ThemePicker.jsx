@@ -8,6 +8,7 @@ import AuthLayout, {
 import { useSpace } from '../../context/SpaceContext';
 import { supabase } from '../../supabase';
 import { THEME_PALETTES, getThemeCssVars, DEFAULT_THEME_KEY } from '../../lib/themes';
+import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function ThemePicker() {
   const { space, refresh, markThemeDone } = useSpace();
@@ -96,7 +97,7 @@ export default function ThemePicker() {
         disabled={!selected || loading}
         onClick={() => save(selected)}
       >
-        {loading ? 'Đang lưu…' : 'Dùng theme này'}
+        {loading ? LOADING_COPY.AO_THEME : 'Dùng theme này'}
       </button>
       <button type="button" className={themedGhostBtnClass} disabled={loading} onClick={() => save(null)}>
         Chọn sau

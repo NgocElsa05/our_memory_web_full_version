@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { THEME_PALETTES, getThemeByKey, DEFAULT_THEME_KEY, getThemeCssVars } from '../lib/themes';
 import { inviteUrl } from '../lib/invite';
 import { enablePushNotifications, isPushSupported } from '../lib/push';
+import { LOADING_COPY } from '../lib/loadingCopy';
 
 export default function Settings() {
   const { space, spaceId, refresh, role, sessionUserId } = useSession();
@@ -112,7 +113,7 @@ export default function Settings() {
         .eq('id', spaceId);
       if (updErr) throw updErr;
       await refresh();
-      setMessage('Đã lưu thay đổi.');
+      setMessage(LOADING_COPY.IN_SAVE_OK);
     } catch (e) {
       setError(e.message || 'Không lưu được, thử lại nhé.');
     } finally {
@@ -132,9 +133,9 @@ export default function Settings() {
     setPushMsg('');
     try {
       await enablePushNotifications({ memberId: sessionUserId, spaceId });
-      setPushMsg('Đã bật thông báo trên thiết bị này.');
+      setPushMsg(LOADING_COPY.IN_PUSH_OK);
     } catch (e) {
-      setPushMsg(e.message || 'Không bật được thông báo.');
+      setPushMsg(e.message || LOADING_COPY.IN_PUSH_FAIL);
     } finally {
       setPushBusy(false);
     }
@@ -191,7 +192,7 @@ export default function Settings() {
     setDangerBusy(true);
     setError('');
     setMessage('');
-    setDangerNote('Đang rời Space…');
+    setDangerNote(LOADING_COPY.IN_LEAVE);
     try {
       const { error: rpcErr } = await supabase.rpc('leave_my_space', { p_space_id: spaceId });
       if (rpcErr) throw rpcErr;
@@ -229,7 +230,7 @@ export default function Settings() {
     setDangerBusy(true);
     setError('');
     setMessage('');
-    setDangerNote('Đang xóa Space…');
+    setDangerNote(LOADING_COPY.IN_DELETE);
     try {
       const { error: rpcErr } = await supabase.rpc('delete_my_space', { p_space_id: spaceId });
       if (rpcErr) throw rpcErr;
@@ -400,7 +401,7 @@ export default function Settings() {
           className="w-full rounded-2xl py-3 text-xs font-black uppercase tracking-widest text-[var(--om-on-primary)] disabled:opacity-50"
           style={{ background: 'var(--om-primary)' }}
         >
-          {pushBusy ? 'Đang bật…' : 'Bật thông báo trên máy này'}
+          {pushBusy ? LOADING_COPY.IN_PUSH : 'Bật thông báo trên máy này'}
         </button>
         {pushMsg && <p className="text-xs font-semibold text-gray-600">{pushMsg}</p>}
       </section>
@@ -434,7 +435,7 @@ export default function Settings() {
           boxShadow: `0 10px 25px -5px var(--om-shadow)`,
         }}
       >
-        {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
+        {saving ? LOADING_COPY.IN_SAVE : 'Lưu thay đổi'}
       </button>
 
       {/* Danger zone */}
@@ -481,7 +482,7 @@ export default function Settings() {
                 disabled={dangerBusy}
                 className="flex-1 rounded-2xl bg-rose-500 text-white py-3 text-xs font-black uppercase tracking-widest disabled:opacity-50"
               >
-                {dangerBusy ? 'Đang rời…' : 'Xác nhận rời'}
+                {dangerBusy ? LOADING_COPY.IN_LEAVE : 'Xác nhận rời'}
               </button>
             </div>
           </div>
@@ -539,7 +540,7 @@ export default function Settings() {
                     disabled={dangerBusy}
                     className="flex-1 rounded-2xl bg-rose-600 text-white py-3 text-xs font-black uppercase tracking-widest disabled:opacity-50"
                   >
-                    {dangerBusy ? 'Đang xóa…' : 'Xóa ngay'}
+                    {dangerBusy ? LOADING_COPY.IN_DELETE : 'Xóa ngay'}
                   </button>
                 </div>
               </>

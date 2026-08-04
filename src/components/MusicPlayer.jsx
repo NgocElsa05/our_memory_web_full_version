@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useSession } from '../context/SessionContext';
 import { Music, X, Disc, Trash2, ChevronDown, Plus } from 'lucide-react';
+import { LOADING_COPY } from '../lib/loadingCopy';
 
 const MusicPlayer = () => {
   const { sessionUserId, spaceId } = useSession();
@@ -44,7 +45,7 @@ const MusicPlayer = () => {
 
   const currentSongTitle =
     playlist.find((s) => s.youtube_id === videoId)?.title ||
-    (videoId === 'jfKfPfyJRdk' ? 'Lofi Chill Nhẹ Nhàng' : 'Đang tải...');
+    (videoId === 'jfKfPfyJRdk' ? 'Lofi Chill Nhẹ Nhàng' : LOADING_COPY.AP_SONG_PLAYER);
 
   useEffect(() => {
     if (videoId) {
