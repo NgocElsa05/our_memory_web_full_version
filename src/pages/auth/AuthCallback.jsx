@@ -28,14 +28,19 @@ function mapOAuthError(params) {
   if (!err && !desc) return null;
   if (err.includes('access_denied')) return 'Bạn đã hủy đăng nhập Google.';
   if (desc.toLowerCase().includes('redirect') || err.includes('redirect')) {
-    return 'Redirect URL chưa khớp. Trong Supabase → Authentication → URL Configuration hãy thêm https://our--memory.vercel.app/** và https://our--memory.vercel.app/auth/callback';
+    return 'Redirect URL chưa khớp trên Supabase hoặc Google Cloud.';
   }
   if (desc) return desc;
   return `Google đăng nhập lỗi: ${err || 'unknown'}`;
 }
 
+function looksLikeGoogleAuthCode(code) {
+  // Mã Google thường dạng 4/0A… — không phải PKCE code của Supabase
+  return typeof code === 'string' && /^4\//.test(code);
+}
+
 /**
- * Google / OAuth quay về đây trước — đợi session xong rồi mới vào onboarding.
+ * Google / OAuth quay về đây — đợi session (detectSessionInUrl / SIGNED_IN).
  */
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -46,52 +51,103 @@ export default function AuthCallback() {
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId;
+
+    async function fail(msg) {
+      if (cancelled) return;
+      setFailed(true);
+      setMessage(msg);
+      timeoutId = setTimeout(() => navigate('/login', { replace: true }), 4000);
+    }
 
     async function finish() {
       const oauthErr = mapOAuthError(searchParams);
       if (oauthErr) {
-        if (!cancelled) {
-          setFailed(true);
-          setMessage(oauthErr);
-        }
-        setTimeout(() => navigate('/login', { replace: true }), 3500);
+        await fail(oauthErr);
         return;
       }
 
       const code = searchParams.get('code');
-
-      // detectSessionInUrl có thể đã đổi code → ưu tiên getSession trước
-      let { data, error } = await supabase.auth.getSession();
-      if (cancelled) return;
-
-      if ((!data.session || error) && code) {
-        const exch = await supabase.auth.exchangeCodeForSession(code);
-        if (cancelled) return;
-        if (exch.error) {
-          setFailed(true);
-          setMessage(exch.error.message || 'Không đổi được mã đăng nhập Google.');
-          setTimeout(() => navigate('/login', { replace: true }), 2800);
-          return;
-        }
-        data = exch.data;
-      }
-
-      if (!data?.session) {
-        setFailed(true);
-        setMessage('Đăng nhập Google chưa thành công. Thử lại hoặc dùng email nhé.');
-        setTimeout(() => navigate('/login', { replace: true }), 2200);
+      if (code && looksLikeGoogleAuthCode(code)) {
+        await fail(
+          'Google đang trả mã về nhầm app (4/0A…). Trong Google Cloud → Credentials → OAuth Client, Authorized redirect URIs chỉ để: https://bpeyxtzmkzidsckizdag.supabase.co/auth/v1/callback (không để URL Vercel).'
+        );
         return;
       }
 
-      await refresh();
+      // Chờ client tự xử lý PKCE (detectSessionInUrl) hoặc event SIGNED_IN
+      const {
+        data: { session: existing },
+      } = await supabase.auth.getSession();
       if (cancelled) return;
-      clearOAuthNext();
-      setMessage('Đăng nhập thành công, đang vào Space…');
+
+      if (existing) {
+        await refresh();
+        if (cancelled) return;
+        clearOAuthNext();
+        setMessage('Đăng nhập thành công, đang vào Space…');
+        return;
+      }
+
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (cancelled) return;
+        if (error) {
+          const msg = error.message || '';
+          if (msg.toLowerCase().includes('exchange external code') || looksLikeGoogleAuthCode(code)) {
+            await fail(
+              'Sai Redirect URI trên Google Cloud. Chỉ dùng: https://bpeyxtzmkzidsckizdag.supabase.co/auth/v1/callback'
+            );
+          } else {
+            await fail(msg || 'Không đổi được mã đăng nhập Google.');
+          }
+          return;
+        }
+        if (data?.session) {
+          await refresh();
+          if (cancelled) return;
+          clearOAuthNext();
+          setMessage('Đăng nhập thành công, đang vào Space…');
+          return;
+        }
+      }
+
+      // Fallback: lắng nghe auth change một lúc
+      const waited = await new Promise((resolve) => {
+        let settled = false;
+        const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+          if (settled) return;
+          if (event === 'SIGNED_IN' && session) {
+            settled = true;
+            clearTimeout(timer);
+            sub.subscription.unsubscribe();
+            resolve(session);
+          }
+        });
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          sub.subscription.unsubscribe();
+          resolve(null);
+        }, 2500);
+      });
+
+      if (cancelled) return;
+      if (waited) {
+        await refresh();
+        if (cancelled) return;
+        clearOAuthNext();
+        setMessage('Đăng nhập thành công, đang vào Space…');
+        return;
+      }
+
+      await fail('Đăng nhập Google chưa thành công. Kiểm tra Redirect URI Google Cloud / Supabase rồi thử lại.');
     }
 
     finish();
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [navigate, refresh, searchParams]);
 
