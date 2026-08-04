@@ -95,7 +95,7 @@ export default function CreateSpace() {
       </form>
       <button
         type="button"
-        className="mt-4 w-full text-xs font-bold text-gray-400 hover:text-[var(--om-primary)]"
+        className="mt-4 w-full text-xs font-bold text-gray-400 hover:text-gray-700"
         onClick={async () => {
           await signOut();
           navigate('/welcome', { replace: true });

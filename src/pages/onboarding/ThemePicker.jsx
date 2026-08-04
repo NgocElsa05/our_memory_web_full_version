@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout, {
   ErrorBox,
-  primaryBtnClass,
-  ghostBtnClass,
+  themedPrimaryBtnClass,
+  themedGhostBtnClass,
 } from '../../components/auth/AuthLayout';
 import { useSpace } from '../../context/SpaceContext';
 import { supabase } from '../../supabase';
@@ -16,12 +16,11 @@ export default function ThemePicker() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const vars = getThemeCssVars(selected || space?.theme_key || DEFAULT_THEME_KEY);
-    Object.entries(vars).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(key, value);
-    });
-  }, [selected, space?.theme_key]);
+  // Preview trong layout auth — không ghi lên :root để Welcome không bị dính theme
+  const previewVars = useMemo(
+    () => getThemeCssVars(selected || space?.theme_key || DEFAULT_THEME_KEY),
+    [selected, space?.theme_key]
+  );
 
   const save = async (themeKey) => {
     if (!space) {
@@ -47,7 +46,11 @@ export default function ThemePicker() {
   };
 
   return (
-    <AuthLayout title="Chọn màu chủ đạo" subtitle="Có thể đổi lại sau trong cài đặt">
+    <AuthLayout
+      title="Chọn màu chủ đạo"
+      subtitle="Có thể đổi lại sau trong cài đặt"
+      cssVars={previewVars}
+    >
       <ErrorBox message={error} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5 max-h-[50vh] overflow-y-auto pr-1">
@@ -89,13 +92,13 @@ export default function ThemePicker() {
 
       <button
         type="button"
-        className={`${primaryBtnClass} mb-3`}
+        className={`${themedPrimaryBtnClass} mb-3`}
         disabled={!selected || loading}
         onClick={() => save(selected)}
       >
         {loading ? 'Đang lưu…' : 'Dùng theme này'}
       </button>
-      <button type="button" className={ghostBtnClass} disabled={loading} onClick={() => save(null)}>
+      <button type="button" className={themedGhostBtnClass} disabled={loading} onClick={() => save(null)}>
         Chọn sau
       </button>
     </AuthLayout>

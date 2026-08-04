@@ -142,7 +142,7 @@ export default function Invite() {
 
       {!loading && space && (
         <div className="space-y-4">
-          <div className="rounded-2xl om-field border border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] p-4">
+          <div className="rounded-2xl om-field border border-gray-200 p-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Tên Space</p>
             <p className="text-xl font-black text-gray-800">{space.name}</p>
             <dl className="mt-4 space-y-2 text-sm">

@@ -66,7 +66,7 @@ export default function Login() {
           Chưa có tài khoản?{' '}
           <Link
             to={invite ? `/signup?invite=${encodeURIComponent(invite)}` : '/signup'}
-            className="font-black text-[var(--om-primary)]"
+            className="font-black text-gray-700"
           >
             Tạo tài khoản
           </Link>
@@ -101,9 +101,9 @@ export default function Login() {
       </form>
 
       <div className="my-5 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-300">
-        <div className="flex-1 h-px bg-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)]" />
+        <div className="flex-1 h-px bg-gray-200" />
         hoặc
-        <div className="flex-1 h-px bg-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)]" />
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
 
       <button type="button" className={ghostBtnClass} onClick={onGoogle} disabled={loading}>

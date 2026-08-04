@@ -179,12 +179,12 @@ export default function AuthCallback() {
   }, [onboardingStep, spaceLoading, navigate, failed]);
 
   return (
-    <div className="min-h-screen bg-[var(--om-tint)] flex items-center justify-center px-6 text-center">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-6 text-center">
       <p
         className={`text-sm font-black max-w-md ${
           failed
             ? 'text-rose-500 font-semibold normal-case tracking-normal'
-            : 'uppercase tracking-widest text-[var(--om-primary)]'
+            : 'uppercase tracking-widest text-gray-600'
         }`}
       >
         {message}

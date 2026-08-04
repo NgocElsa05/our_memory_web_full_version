@@ -54,6 +54,43 @@ export const THEME_PALETTES = [
 
 export const DEFAULT_THEME_KEY = 'neapolitan';
 
+/** Soft-slate mặc định cho Welcome / auth / onboarding (khớp :root trong index.css). */
+export const AUTH_DEFAULT_CSS_VARS = {
+  '--om-primary': '#7ca1d9',
+  '--om-primary-soft': '#bec3ea',
+  '--om-accent': '#e7b5d3',
+  '--om-muted': '#d7c8e9',
+  '--om-lavender': '#d7c8e9',
+  '--om-tint': '#f4f5fa',
+  '--om-field': '#f7f8fc',
+  '--om-on-field': '#1a1a1a',
+  '--om-placeholder': '#5b6472',
+  '--om-bg': '#f8f9fd',
+  '--om-on-primary': '#ffffff',
+  '--om-on-accent': '#1a1a1a',
+  '--om-shadow': '#7ca1d933',
+};
+
+/**
+ * Form auth/onboarding: xám trung tính (không inherit theme Space / brand-blue).
+ * Title OUR MEMORY giữ màu brand riêng trong AuthLayout.
+ */
+export const AUTH_BASIC_ACTION_VARS = {
+  '--om-primary': '#4b5563',
+  '--om-primary-soft': '#d1d5db',
+  '--om-accent': '#9ca3af',
+  '--om-muted': '#e5e7eb',
+  '--om-lavender': '#9ca3af',
+  '--om-tint': '#f3f4f6',
+  '--om-field': '#f9fafb',
+  '--om-on-field': '#1a1a1a',
+  '--om-placeholder': '#6b7280',
+  '--om-bg': '#f3f4f6',
+  '--om-on-primary': '#ffffff',
+  '--om-on-accent': '#1a1a1a',
+  '--om-shadow': '#4b556333',
+};
+
 export function getThemeByKey(key) {
   return THEME_PALETTES.find((t) => t.key === key) || THEME_PALETTES[0];
 }

@@ -33,12 +33,12 @@ export default function Welcome() {
         </Link>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-[color-mix(in_srgb,var(--om-primary-soft)_25%,transparent)]">
+      <div className="mt-8 pt-6 border-t border-gray-200">
         {!showInvite ? (
           <button
             type="button"
             onClick={() => setShowInvite(true)}
-            className="w-full text-sm font-bold text-[var(--om-primary)] hover:underline"
+            className="w-full text-sm font-bold text-gray-600 hover:underline"
           >
             Có lời mời?
           </button>
