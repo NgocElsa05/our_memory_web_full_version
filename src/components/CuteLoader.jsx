@@ -45,7 +45,7 @@ export default function CuteLoader({
 
   if (variant === 'overlay') {
     return (
-      <div className="fixed inset-0 z-[80] bg-black/45 backdrop-blur-[2px] flex items-center justify-center px-6">
+      <div className="fixed inset-0 z-[200] bg-black/45 backdrop-blur-[2px] flex items-center justify-center px-6">
         <div className="bg-white/95 rounded-3xl shadow-2xl px-8 py-10 max-w-sm w-full border border-white/60">
           <div className="flex flex-col items-center gap-4">
             {motion === 'fluff' && <FluffFrames />}

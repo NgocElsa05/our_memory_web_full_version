@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
 import Calendar from 'react-calendar';
@@ -24,24 +24,37 @@ const Gallery = () => {
   const [view, setView] = useState('grid'); // grid | calendar | album
   const [activeAlbum, setActiveAlbum] = useState(null); // Trạng thái để lọc ảnh theo album
   const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [filterDate, setFilterDate] = useState(new Date());
 
   const { tabNames } = useProfileNicknames();
   const galleryKey = [...GALLERY_MEDIA_QUERY_KEY, spaceId];
 
+  useEffect(() => {
+    if (!uploadNote) return undefined;
+    const t = setTimeout(() => setUploadNote(null), 3500);
+    return () => clearTimeout(t);
+  }, [uploadNote]);
+
   const invalidateGallery = () =>
     queryClient.invalidateQueries({ queryKey: galleryKey });
 
   const runGalleryDbUpload = async (items) => {
     if (!spaceId || !sessionUserId) {
-      alert('Chưa vào Space.');
+      setUploadNote({ message: 'Chưa vào Space.', error: true });
       return;
     }
     const caption = window.prompt(`✍️ Nhập chú thích cho ${items.length} kỷ niệm này (để trống nếu không muốn ghi):`, '') || '';
     const albumInput = window.prompt("📂 Nhập tên Album (để trống sẽ lưu vào 'Chung'):", 'Chung') || 'Chung';
 
     setUploading(true);
+    setUploadNote(null);
+    // Cho React kịp vẽ overlay trước khi upload nặng
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const startedAt = Date.now();
+    const MIN_OVERLAY_MS = 1800;
+
     try {
       const results = await Promise.all(
         items.map(async (item, i) => {
@@ -84,9 +97,13 @@ const Gallery = () => {
       if (dbError) throw dbError;
 
       await invalidateGallery();
-      alert(`Đã tải lên thành công ${items.length} kỷ niệm mới! ✨`);
+      const wait = Math.max(0, MIN_OVERLAY_MS - (Date.now() - startedAt));
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      setUploadNote({
+        message: `Đã treo ${items.length} kỷ niệm lên tường rồi ✨`,
+      });
     } catch (error) {
-      alert('Lỗi: ' + error.message);
+      setUploadNote({ message: error.message || 'Chưa treo được kỷ niệm… thử lại nhé.', error: true });
     } finally {
       setUploading(false);
     }
@@ -133,6 +150,15 @@ const Gallery = () => {
           motion="fluff"
           message={LOADING_COPY.AP_GALLERY}
         />
+      )}
+      {uploadNote && !uploading && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[85] w-[min(92vw,24rem)] px-3">
+          <CuteLoader
+            variant="toast"
+            message={uploadNote.message}
+            error={Boolean(uploadNote.error)}
+          />
+        </div>
       )}
       
       <style>
