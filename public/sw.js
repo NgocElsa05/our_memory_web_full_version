@@ -18,8 +18,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'Our Memory', {
       body: data.body || '',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/favicon-32.png',
+      icon: '/icons/icon-192.png?v=2',
+      badge: '/icons/favicon-32.png?v=2',
       data: { url: data.url || '/' },
       tag: data.tag || 'our-memory',
       renotify: true,

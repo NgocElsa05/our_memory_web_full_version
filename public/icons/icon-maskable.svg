@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <rect width="512" height="512" fill="#ffffff"/>
+  <!-- Maskable safe zone: heart slightly smaller / centered -->
   <path
     fill="#f4a7c5"
+    transform="translate(256 256) scale(0.78) translate(-256 -256)"
     d="M256 402c-6-5-138-100-138-188 0-48 35-84 84-84 28 0 48 14 54 32 6-18 26-32 54-32 49 0 84 36 84 84 0 88-132 183-138 188z"
   />
 </svg>
