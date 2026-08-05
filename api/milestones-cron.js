@@ -19,19 +19,27 @@ function json(res, status, body) {
 
 function parseBirthday(raw) {
   if (!raw || typeof raw !== 'string') return null;
-  const s = raw.trim();
-  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  const s = raw
+    .trim()
+    .replace(/[()[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return null;
+
+  let m = s.match(/(?:^|[^\d])(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[^\d]|$)/);
   if (m) {
     const month = Number(m[2]);
     const day = Number(m[3]);
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return { month, day };
   }
-  m = s.match(/^(\d{1,2})[/\-.](\d{1,2})/);
+
+  m = s.match(/(?:^|[^\d])(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?(?:[^\d]|$)/);
   if (m) {
     const day = Number(m[1]);
     const month = Number(m[2]);
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return { month, day };
   }
+
   return null;
 }
 

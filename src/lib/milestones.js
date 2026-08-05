@@ -7,22 +7,27 @@ export function todayKey(d = new Date()) {
   return `${y}-${m}-${day}`;
 }
 
-/** Parse birthday free-text → { month, day } (DD/MM ưu tiên) */
+/** Parse birthday free-text → { month, day } (DD/MM, bỏ năm khi so khớp hàng năm) */
 export function parseBirthday(raw) {
   if (!raw || typeof raw !== 'string') return null;
-  const s = raw.trim();
+  // Bỏ ngoặc / ký tự rối: "(28/06/1999)", "sinh: 15-08-1999"
+  const s = raw
+    .trim()
+    .replace(/[()[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!s) return null;
 
-  // ISO: 2000-03-22 hoặc 2000/03/22
-  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  // ISO có năm đầu: 1999-08-15
+  let m = s.match(/(?:^|[^\d])(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[^\d]|$)/);
   if (m) {
     const month = Number(m[2]);
     const day = Number(m[3]);
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return { month, day };
   }
 
-  // DD/MM hoặc DD-MM hoặc DD.MM (có thể kèm năm phía sau)
-  m = s.match(/^(\d{1,2})[/\-.](\d{1,2})(?:[/\-.](\d{2,4}))?/);
+  // DD/MM hoặc DD/MM/YYYY nằm bất kỳ đâu trong chuỗi
+  m = s.match(/(?:^|[^\d])(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?(?:[^\d]|$)/);
   if (m) {
     const day = Number(m[1]);
     const month = Number(m[2]);
