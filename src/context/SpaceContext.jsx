@@ -39,6 +39,8 @@ export function SpaceProvider({ children }) {
   const [profilesById, setProfilesById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  /** Buộc tính lại onboardingStep sau khi ghi sessionStorage (theme/preview done). */
+  const [onboardingTick, setOnboardingTick] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -125,10 +127,12 @@ export function SpaceProvider({ children }) {
 
   const markThemeDone = useCallback((spaceId) => {
     sessionStorage.setItem(`theme_done_${spaceId}`, '1');
+    setOnboardingTick((n) => n + 1);
   }, []);
 
   const markPreviewDone = useCallback((spaceId) => {
     sessionStorage.setItem(`preview_done_${spaceId}`, '1');
+    setOnboardingTick((n) => n + 1);
   }, []);
 
   const nicknameOf = useCallback(
@@ -149,7 +153,8 @@ export function SpaceProvider({ children }) {
     if (authLoading || loading) return 'loading';
     if (!user) return 'logged_out';
     return resolveStep({ member, space, profile });
-  }, [authLoading, loading, user, member, space, profile]);
+    // onboardingTick: đọc lại theme_done / preview_done trong sessionStorage
+  }, [authLoading, loading, user, member, space, profile, onboardingTick]);
 
   const partnerId = partner?.id ?? null;
 
