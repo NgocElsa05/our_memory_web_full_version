@@ -99,7 +99,7 @@ Copy loading / thông báo nên dịu, gần gũi — không lạnh kiểu “Lo
 
 | ID    | Khi nào                    | Text hiện tại         | Text đề xuất                  | Animation (tạm)          |
 | ----- | -------------------------- | --------------------- | ----------------------------- | ------------------------ |
-| AP-01 | Upload ảnh Gallery (nhiều ảnh — chờ lâu) | Spinner không chữ | Đang treo kỷ niệm lên tường… | Overlay: **2 cục bông xù** màu `--om-primary` / `--om-accent` (theo theme) tựa vào nhau + **nhiều khung tranh** bay/treo quanh. Dưới là dòng text. Lặp đến khi upload xong. |
+| AP-01 | Upload ảnh Gallery (nhiều ảnh — chờ lâu) | Spinner không chữ | Đang treo kỷ niệm lên tường… | Overlay: khung thẻ theo theme — thẻ nhỏ bay vào thẻ chính (bỏ cục bông). Dưới là dòng text. |
 | AP-02 | Upload mood Discovery      | Spinner nhỏ           | Đang ghi lại cảm xúc hôm nay… | Hiện chữ                 |
 | AP-03 | Upload overlay Discovery   | Spinner lớn           | Tình yêu đợi tí nhé…          | Hiện chữ                 |
 | AP-04 | Load biệt danh             | Đang tải biệt danh…   | Đang gọi tên nhau…            | Hiện chữ                 |

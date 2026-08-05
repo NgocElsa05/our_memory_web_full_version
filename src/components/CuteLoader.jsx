@@ -47,11 +47,11 @@ export default function CuteLoader({
   if (variant === 'overlay') {
     return (
       <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[2px] flex items-center justify-center px-6">
-        <div className="bg-[#fffbf0]/95 rounded-3xl shadow-2xl px-8 py-10 max-w-sm w-full border border-[#e8d9c8]">
+        <div className="bg-[var(--om-tint)]/95 rounded-3xl shadow-2xl px-8 py-10 max-w-sm w-full border border-[var(--om-primary-soft)]">
           <div className="flex flex-col items-center gap-5">
             {showCards && <MemoryCardsFlight />}
             {motion === 'letter' && <LetterFlight />}
-            <p className="text-sm font-black text-center text-[#5c4a3a] leading-snug max-w-xs">
+            <p className="text-sm font-black text-center text-[var(--om-on-field)] leading-snug max-w-xs">
               {message}
             </p>
           </div>
@@ -96,12 +96,24 @@ function LetterFlight() {
   );
 }
 
-/** AP-01 — khung kỷ niệm: thẻ nhỏ bay vào thẻ chính */
+/** AP-01 — khung kỷ niệm: thẻ nhỏ bay vào thẻ chính (màu theo theme) */
 function MemoryCardsFlight() {
   const flying = [
-    { delay: '0s', opacity: 0.95 },
-    { delay: '0.22s', opacity: 0.55 },
-    { delay: '0.44s', opacity: 0.32 },
+    {
+      delay: '0s',
+      border: 'var(--om-primary)',
+      bg: 'color-mix(in srgb, var(--om-primary-soft) 88%, white)',
+    },
+    {
+      delay: '0.22s',
+      border: 'var(--om-accent)',
+      bg: 'color-mix(in srgb, var(--om-accent) 55%, white)',
+    },
+    {
+      delay: '0.44s',
+      border: 'var(--om-muted)',
+      bg: 'color-mix(in srgb, var(--om-muted) 40%, white)',
+    },
   ];
 
   return (
@@ -109,14 +121,18 @@ function MemoryCardsFlight() {
       {flying.map((f, i) => (
         <span
           key={i}
-          className="om-mem-fly absolute left-2 top-2 w-14 h-[4.5rem] rounded-xl border-[3px] border-[#c4a484] bg-[#ddc4a8]/90 shadow-sm"
+          className="om-mem-fly absolute left-2 top-2 w-14 h-[4.5rem] rounded-xl border-[3px] shadow-sm"
           style={{
             animationDelay: f.delay,
-            opacity: f.opacity,
+            borderColor: f.border,
+            backgroundColor: f.bg,
           }}
         />
       ))}
-      <div className="om-mem-main absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[42%] w-[5.25rem] h-[6.75rem] rounded-2xl border-[4px] border-[#b89379] bg-white shadow-md" />
+      <div
+        className="om-mem-main absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[42%] w-[5.25rem] h-[6.75rem] rounded-2xl border-[4px] bg-white shadow-md"
+        style={{ borderColor: 'var(--om-primary)' }}
+      />
     </div>
   );
 }
