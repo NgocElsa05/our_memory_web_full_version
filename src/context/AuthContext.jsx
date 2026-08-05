@@ -37,7 +37,19 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
-      setSession(next);
+      // Tránh setState làm cây app remount khi chỉ refresh token (đổi tab / focus)
+      setSession((prev) => {
+        if (
+          prev?.user?.id &&
+          next?.user?.id &&
+          prev.user.id === next.user.id &&
+          prev.access_token === next.access_token
+        ) {
+          return prev;
+        }
+        // Token mới nhưng cùng user — cập nhật session, không đổi identity user id
+        return next;
+      });
       setLoading(false);
     });
     return () => {

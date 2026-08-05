@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from './AuthContext';
 
@@ -30,6 +30,7 @@ function resolveStep({ member, space, profile }) {
 
 export function SpaceProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
   const [member, setMember] = useState(null);
   const [space, setSpace] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -41,9 +42,12 @@ export function SpaceProvider({ children }) {
   const [error, setError] = useState('');
   /** Buộc tính lại onboardingStep sau khi ghi sessionStorage (theme/preview done). */
   const [onboardingTick, setOnboardingTick] = useState(0);
+  const hasLoadedOnceRef = useRef(false);
 
-  const refresh = useCallback(async () => {
-    if (!user) {
+  const refresh = useCallback(async (opts = {}) => {
+    const silent = Boolean(opts.silent) || hasLoadedOnceRef.current;
+
+    if (!userId) {
       setMember(null);
       setSpace(null);
       setProfile(null);
@@ -53,17 +57,19 @@ export function SpaceProvider({ children }) {
       setProfilesById({});
       setLoading(false);
       setError('');
+      hasLoadedOnceRef.current = false;
       return;
     }
 
-    setLoading(true);
+    // Không bật full-screen loading khi đã từng load — tránh remount nhạc / gọi lại hàng loạt khi TOKEN_REFRESH
+    if (!silent) setLoading(true);
     setError('');
 
     try {
       const { data: myMember, error: memErr } = await supabase
         .from('members')
         .select('*')
-        .eq('auth_user_id', user.id)
+        .eq('auth_user_id', userId)
         .maybeSingle();
 
       if (memErr) throw memErr;
@@ -112,18 +118,20 @@ export function SpaceProvider({ children }) {
       const other = (spaceMembers || []).find((m) => m.id !== myMember.id) || null;
       setPartner(other);
       setPartnerProfile(other ? byId[other.id] || null : null);
+      hasLoadedOnceRef.current = true;
     } catch (e) {
       console.error(e);
       setError(e.message || 'Không tải được dữ liệu space');
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     if (authLoading) return;
-    refresh();
-  }, [authLoading, refresh]);
+    // Chỉ load lại khi đăng nhập / đổi user — KHÔNG phụ thuộc object session mới sau token refresh
+    void refresh({ silent: hasLoadedOnceRef.current });
+  }, [authLoading, userId, refresh]);
 
   const markThemeDone = useCallback((spaceId) => {
     sessionStorage.setItem(`theme_done_${spaceId}`, '1');
