@@ -37,17 +37,33 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
-      // Tránh setState làm cây app remount khi chỉ refresh token (đổi tab / focus)
+
+      // Supabase gọi _recoverAndRefresh mỗi lần tab visible lại → SIGNED_IN / TOKEN_REFRESHED.
+      // Giữ identity ổn định để Space/OnboardingGate không flash loading / remount nhạc.
       setSession((prev) => {
-        if (
-          prev?.user?.id &&
-          next?.user?.id &&
-          prev.user.id === next.user.id &&
-          prev.access_token === next.access_token
-        ) {
-          return prev;
+        if (!next) return prev;
+
+        const sameUser =
+          Boolean(prev?.user?.id) &&
+          Boolean(next?.user?.id) &&
+          prev.user.id === next.user.id;
+
+        if (sameUser) {
+          if (
+            prev.access_token === next.access_token &&
+            prev.refresh_token === next.refresh_token &&
+            prev.expires_at === next.expires_at &&
+            event !== 'USER_UPDATED'
+          ) {
+            return prev;
+          }
+          // Token / profile mới nhưng cùng user — tránh đổi identity làm Space remount
+          return {
+            ...next,
+            user: event === 'USER_UPDATED' ? next.user : prev.user,
+          };
         }
-        // Token mới nhưng cùng user — cập nhật session, không đổi identity user id
+
         return next;
       });
       setLoading(false);

@@ -43,6 +43,8 @@ export function SpaceProvider({ children }) {
   /** Buộc tính lại onboardingStep sau khi ghi sessionStorage (theme/preview done). */
   const [onboardingTick, setOnboardingTick] = useState(0);
   const hasLoadedOnceRef = useRef(false);
+  /** userId đã hydrate xong — tránh refresh lại khi Supabase fire SIGNED_IN lúc đổi tab */
+  const loadedUserIdRef = useRef(null);
 
   const refresh = useCallback(async (opts = {}) => {
     const silent = Boolean(opts.silent) || hasLoadedOnceRef.current;
@@ -58,10 +60,11 @@ export function SpaceProvider({ children }) {
       setLoading(false);
       setError('');
       hasLoadedOnceRef.current = false;
+      loadedUserIdRef.current = null;
       return;
     }
 
-    // Không bật full-screen loading khi đã từng load — tránh remount nhạc / gọi lại hàng loạt khi TOKEN_REFRESH
+    // Chỉ fullscreen loading lần đầu / đổi user — không bao giờ khi quay lại tab
     if (!silent) setLoading(true);
     setError('');
 
@@ -82,6 +85,8 @@ export function SpaceProvider({ children }) {
         setPartnerProfile(null);
         setMembers([]);
         setProfilesById({});
+        hasLoadedOnceRef.current = true;
+        loadedUserIdRef.current = userId;
         return;
       }
 
@@ -119,9 +124,13 @@ export function SpaceProvider({ children }) {
       setPartner(other);
       setPartnerProfile(other ? byId[other.id] || null : null);
       hasLoadedOnceRef.current = true;
+      loadedUserIdRef.current = userId;
     } catch (e) {
       console.error(e);
-      setError(e.message || 'Không tải được dữ liệu space');
+      // Giữ data cũ nếu đã load được — tránh đá về màn loading khi mạng lỗi lúc đổi tab
+      if (!hasLoadedOnceRef.current) {
+        setError(e.message || 'Không tải được dữ liệu space');
+      }
     } finally {
       setLoading(false);
     }
@@ -129,8 +138,9 @@ export function SpaceProvider({ children }) {
 
   useEffect(() => {
     if (authLoading) return;
-    // Chỉ load lại khi đăng nhập / đổi user — KHÔNG phụ thuộc object session mới sau token refresh
-    void refresh({ silent: hasLoadedOnceRef.current });
+    // Đã hydrate đúng user này rồi → bỏ qua (tránh refresh khi SIGNED_IN lúc focus tab)
+    if (loadedUserIdRef.current === userId && hasLoadedOnceRef.current) return;
+    void refresh({ silent: hasLoadedOnceRef.current && loadedUserIdRef.current === userId });
   }, [authLoading, userId, refresh]);
 
   const markThemeDone = useCallback((spaceId) => {

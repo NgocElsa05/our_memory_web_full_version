@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes, Link, useLocation } from 'react-router-dom';
 import { Home as HomeIcon, Calendar, Search, Mail, Heart, Settings as SettingsIcon } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -76,10 +76,15 @@ function RequireAuth({ children }) {
 
 function OnboardingGate({ expect, children }) {
   const { onboardingStep, loading, error } = useSpace();
-  if (loading || onboardingStep === 'loading') {
+  // Đã vào đúng bước sẵn rồi thì không hạ shell xuống màn loading (đổi tab / token refresh)
+  const settledRef = useRef(false);
+  if (onboardingStep === expect) settledRef.current = true;
+  if (onboardingStep === 'logged_out') settledRef.current = false;
+
+  if ((loading || onboardingStep === 'loading') && !settledRef.current) {
     return <LoadingScreen message={LOADING_COPY.FS_SPACE} />;
   }
-  if (error) {
+  if (error && !settledRef.current) {
     return (
       <div className="min-h-screen bg-[var(--om-tint)] flex flex-col items-center justify-center px-6 text-center">
         <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--om-accent)_45%,#3a1a28)] mb-2">{error}</p>
@@ -92,7 +97,7 @@ function OnboardingGate({ expect, children }) {
   if (onboardingStep === 'logged_out') {
     return <Navigate to="/welcome" replace />;
   }
-  if (onboardingStep !== expect) {
+  if (onboardingStep !== expect && onboardingStep !== 'loading') {
     const to = stepPath(onboardingStep);
     if (to) return <Navigate to={to} replace />;
   }
