@@ -1,5 +1,12 @@
 {
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/milestones-cron",
+      "schedule": "0 1 * * *"
+    }
   ]
 }
+
