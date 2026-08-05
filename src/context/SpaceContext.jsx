@@ -1,6 +1,20 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from './AuthContext';
+import {
+  clearSpaceBootCache,
+  readSpaceBootCache,
+  writeSpaceBootCache,
+} from '../lib/spaceBootCache';
 
 const SpaceContext = createContext(null);
 
@@ -40,107 +54,155 @@ export function SpaceProvider({ children }) {
   const [profilesById, setProfilesById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  /** Buộc tính lại onboardingStep sau khi ghi sessionStorage (theme/preview done). */
   const [onboardingTick, setOnboardingTick] = useState(0);
   const hasLoadedOnceRef = useRef(false);
-  /** userId đã hydrate xong — tránh refresh lại khi Supabase fire SIGNED_IN lúc đổi tab */
   const loadedUserIdRef = useRef(null);
+  const silentRefreshOnceRef = useRef(null);
 
-  const refresh = useCallback(async (opts = {}) => {
-    const silent = Boolean(opts.silent) || hasLoadedOnceRef.current;
+  const applyPayload = useCallback((payload) => {
+    setMember(payload.member ?? null);
+    setSpace(payload.space ?? null);
+    setProfile(payload.profile ?? null);
+    setPartner(payload.partner ?? null);
+    setPartnerProfile(payload.partnerProfile ?? null);
+    setMembers(payload.members ?? []);
+    setProfilesById(payload.profilesById ?? {});
+  }, []);
+
+  // Hydrate từ sessionStorage TRƯỚC paint — tab discard/reload không flash FS_SPACE
+  useLayoutEffect(() => {
+    if (authLoading) return;
 
     if (!userId) {
-      setMember(null);
-      setSpace(null);
-      setProfile(null);
-      setPartner(null);
-      setPartnerProfile(null);
-      setMembers([]);
-      setProfilesById({});
+      applyPayload({});
       setLoading(false);
       setError('');
       hasLoadedOnceRef.current = false;
       loadedUserIdRef.current = null;
+      clearSpaceBootCache();
       return;
     }
 
-    // Chỉ fullscreen loading lần đầu / đổi user — không bao giờ khi quay lại tab
-    if (!silent) setLoading(true);
-    setError('');
+    if (loadedUserIdRef.current === userId && hasLoadedOnceRef.current) return;
 
-    try {
-      const { data: myMember, error: memErr } = await supabase
-        .from('members')
-        .select('*')
-        .eq('auth_user_id', userId)
-        .maybeSingle();
+    const cached = readSpaceBootCache(userId);
+    if (cached && cached.member && cached.space) {
+      applyPayload(cached);
+      hasLoadedOnceRef.current = true;
+      loadedUserIdRef.current = userId;
+      setLoading(false);
+      setError('');
+    }
+  }, [authLoading, userId, applyPayload]);
 
-      if (memErr) throw memErr;
+  const refresh = useCallback(
+    async (opts = {}) => {
+      const silent = Boolean(opts.silent) || hasLoadedOnceRef.current;
 
-      if (!myMember) {
-        setMember(null);
-        setSpace(null);
-        setProfile(null);
-        setPartner(null);
-        setPartnerProfile(null);
-        setMembers([]);
-        setProfilesById({});
-        hasLoadedOnceRef.current = true;
-        loadedUserIdRef.current = userId;
+      if (!userId) {
+        applyPayload({});
+        setLoading(false);
+        setError('');
+        hasLoadedOnceRef.current = false;
+        loadedUserIdRef.current = null;
+        clearSpaceBootCache();
         return;
       }
 
-      setMember(myMember);
+      if (!silent) setLoading(true);
+      setError('');
 
-      const { data: spaceRow, error: spaceErr } = await supabase
-        .from('spaces')
-        .select('*')
-        .eq('id', myMember.space_id)
-        .maybeSingle();
-      if (spaceErr) throw spaceErr;
-      setSpace(spaceRow);
+      try {
+        const { data: myMember, error: memErr } = await supabase
+          .from('members')
+          .select('*')
+          .eq('auth_user_id', userId)
+          .maybeSingle();
 
-      const { data: spaceMembers, error: allMemErr } = await supabase
-        .from('members')
-        .select('*')
-        .eq('space_id', myMember.space_id);
-      if (allMemErr) throw allMemErr;
-      setMembers(spaceMembers || []);
+        if (memErr) throw memErr;
 
-      const { data: spaceProfiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('space_id', myMember.space_id);
-      if (profErr) throw profErr;
+        if (!myMember) {
+          const empty = {
+            member: null,
+            space: null,
+            profile: null,
+            partner: null,
+            partnerProfile: null,
+            members: [],
+            profilesById: {},
+          };
+          applyPayload(empty);
+          hasLoadedOnceRef.current = true;
+          loadedUserIdRef.current = userId;
+          clearSpaceBootCache();
+          return;
+        }
 
-      const byId = {};
-      (spaceProfiles || []).forEach((p) => {
-        byId[p.id] = p;
-      });
-      setProfilesById(byId);
-      setProfile(byId[myMember.id] || null);
+        const { data: spaceRow, error: spaceErr } = await supabase
+          .from('spaces')
+          .select('*')
+          .eq('id', myMember.space_id)
+          .maybeSingle();
+        if (spaceErr) throw spaceErr;
 
-      const other = (spaceMembers || []).find((m) => m.id !== myMember.id) || null;
-      setPartner(other);
-      setPartnerProfile(other ? byId[other.id] || null : null);
-      hasLoadedOnceRef.current = true;
-      loadedUserIdRef.current = userId;
-    } catch (e) {
-      console.error(e);
-      // Giữ data cũ nếu đã load được — tránh đá về màn loading khi mạng lỗi lúc đổi tab
-      if (!hasLoadedOnceRef.current) {
-        setError(e.message || 'Không tải được dữ liệu space');
+        const { data: spaceMembers, error: allMemErr } = await supabase
+          .from('members')
+          .select('*')
+          .eq('space_id', myMember.space_id);
+        if (allMemErr) throw allMemErr;
+
+        const { data: spaceProfiles, error: profErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('space_id', myMember.space_id);
+        if (profErr) throw profErr;
+
+        const byId = {};
+        (spaceProfiles || []).forEach((p) => {
+          byId[p.id] = p;
+        });
+
+        const other = (spaceMembers || []).find((m) => m.id !== myMember.id) || null;
+        const payload = {
+          member: myMember,
+          space: spaceRow,
+          profile: byId[myMember.id] || null,
+          partner: other,
+          partnerProfile: other ? byId[other.id] || null : null,
+          members: spaceMembers || [],
+          profilesById: byId,
+        };
+
+        applyPayload(payload);
+        hasLoadedOnceRef.current = true;
+        loadedUserIdRef.current = userId;
+        writeSpaceBootCache(userId, payload);
+      } catch (e) {
+        console.error(e);
+        if (!hasLoadedOnceRef.current) {
+          setError(e.message || 'Không tải được dữ liệu space');
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+    },
+    [userId, applyPayload]
+  );
 
   useEffect(() => {
     if (authLoading) return;
-    // Đã hydrate đúng user này rồi → bỏ qua (tránh refresh khi SIGNED_IN lúc focus tab)
-    if (loadedUserIdRef.current === userId && hasLoadedOnceRef.current) return;
-    void refresh({ silent: hasLoadedOnceRef.current && loadedUserIdRef.current === userId });
+    if (!userId) return;
+
+    // Đã có cache / đã load — chỉ silent refresh một lần sau hydrate
+    if (loadedUserIdRef.current === userId && hasLoadedOnceRef.current) {
+      if (silentRefreshOnceRef.current !== userId) {
+        silentRefreshOnceRef.current = userId;
+        void refresh({ silent: true });
+      }
+      return;
+    }
+
+    void refresh({ silent: false });
   }, [authLoading, userId, refresh]);
 
   const markThemeDone = useCallback((spaceId) => {
@@ -171,7 +233,6 @@ export function SpaceProvider({ children }) {
     if (authLoading || loading) return 'loading';
     if (!user) return 'logged_out';
     return resolveStep({ member, space, profile });
-    // onboardingTick: đọc lại theme_done / preview_done trong sessionStorage
   }, [authLoading, loading, user, member, space, profile, onboardingTick]);
 
   const partnerId = partner?.id ?? null;

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabase';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '../lib/invite';
+import { clearSpaceBootCache } from '../lib/spaceBootCache';
 
 const AuthContext = createContext(null);
 
@@ -11,14 +12,40 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    const syncSession = async () => {
-      // getUser() gọi server — nếu user đã bị xóa ở Authentication thì session local sẽ fail
+    const hydrateLocalThenValidate = async () => {
+      // 1) Đọc session local ngay — không chờ mạng → tránh flash loading khi tab restore
+      const { data: local } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (local.session) {
+        setSession(local.session);
+        setLoading(false);
+      }
+
+      // 2) Validate với server; lỗi mạng thì giữ session local, không đá logout
       const { data: userData, error: userErr } = await supabase.auth.getUser();
       if (!mounted) return;
 
-      if (userErr || !userData?.user) {
+      if (userErr) {
+        const msg = (userErr.message || '').toLowerCase();
+        const transient =
+          msg.includes('network') ||
+          msg.includes('fetch') ||
+          msg.includes('timeout') ||
+          msg.includes('failed to fetch');
+        if (!transient && !userData?.user) {
+          setSession(null);
+          setLoading(false);
+          clearSpaceBootCache();
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (!userData?.user) {
         setSession(null);
         setLoading(false);
+        clearSpaceBootCache();
         await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
         return;
       }
@@ -29,17 +56,17 @@ export function AuthProvider({ children }) {
       setLoading(false);
     };
 
-    void syncSession();
+    void hydrateLocalThenValidate();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setLoading(false);
+        clearSpaceBootCache();
         return;
       }
 
-      // Supabase gọi _recoverAndRefresh mỗi lần tab visible lại → SIGNED_IN / TOKEN_REFRESHED.
-      // Giữ identity ổn định để Space/OnboardingGate không flash loading / remount nhạc.
+      // Tab focus → Supabase _recoverAndRefresh → SIGNED_IN / TOKEN_REFRESHED
       setSession((prev) => {
         if (!next) return prev;
 
@@ -57,7 +84,6 @@ export function AuthProvider({ children }) {
           ) {
             return prev;
           }
-          // Token / profile mới nhưng cùng user — tránh đổi identity làm Space remount
           return {
             ...next,
             user: event === 'USER_UPDATED' ? next.user : prev.user,
@@ -77,7 +103,6 @@ export function AuthProvider({ children }) {
   const signUpWithEmail = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
-    // Set ngay để tránh race: navigate trước khi onAuthStateChange kịp chạy
     if (data.session) setSession(data.session);
     return data;
   }, []);
@@ -93,7 +118,6 @@ export function AuthProvider({ children }) {
     const invite = readPendingInvite();
     if (invite) savePendingInvite(invite);
 
-    // Luôn về /auth/callback trước — ổn định hơn trên localhost
     const next =
       invite && !nextPath.startsWith('/invite')
         ? `/invite/${encodeURIComponent(invite)}`
@@ -111,6 +135,7 @@ export function AuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     clearPendingInvite();
+    clearSpaceBootCache();
     setSession(null);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
