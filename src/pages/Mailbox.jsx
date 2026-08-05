@@ -80,6 +80,8 @@ const Mailbox = () => {
 
     setSending(true);
     setFeedback(null);
+    const startedAt = Date.now();
+    const MIN_SEND_MS = 5000;
     try {
       const { error } = await supabase.from('love_letters').insert([
         {
@@ -106,6 +108,8 @@ const Mailbox = () => {
         url: '/mailbox',
         tag: 'love-letter',
       });
+      const wait = Math.max(0, MIN_SEND_MS - (Date.now() - startedAt));
+      if (wait) await new Promise((r) => setTimeout(r, wait));
       setFeedback({ message: LOADING_COPY.MB_SENT });
     } catch {
       setFeedback({ message: LOADING_COPY.MB_SEND_FAIL, error: true });
