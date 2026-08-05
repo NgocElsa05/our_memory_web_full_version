@@ -4,7 +4,7 @@ import { LOADING_COPY } from '../lib/loadingCopy';
 /**
  * CuteLoader — loading / feedback theo LOADING_ANIMATIONS.md
  * variant: 'fullscreen' | 'inline' | 'overlay' | 'toast'
- * motion: 'none' | 'letter' | 'fluff'
+ * motion: 'none' | 'letter' | 'fluff' | 'cards'  (fluff = alias cards)
  */
 export default function CuteLoader({
   message = LOADING_COPY.FS_AUTH,
@@ -13,6 +13,7 @@ export default function CuteLoader({
   error = false,
   className = '',
 }) {
+  const showCards = motion === 'fluff' || motion === 'cards';
   const textClass = error
     ? 'text-rose-500'
     : variant === 'overlay'
@@ -22,7 +23,7 @@ export default function CuteLoader({
   const content = (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
       {motion === 'letter' && <LetterFlight />}
-      {motion === 'fluff' && <FluffFrames />}
+      {showCards && <MemoryCardsFlight />}
       <p
         className={`text-sm font-black text-center max-w-xs leading-snug ${
           variant === 'fullscreen' || variant === 'overlay'
@@ -45,12 +46,12 @@ export default function CuteLoader({
 
   if (variant === 'overlay') {
     return (
-      <div className="fixed inset-0 z-[200] bg-black/45 backdrop-blur-[2px] flex items-center justify-center px-6">
-        <div className="bg-white/95 rounded-3xl shadow-2xl px-8 py-10 max-w-sm w-full border border-white/60">
-          <div className="flex flex-col items-center gap-4">
-            {motion === 'fluff' && <FluffFrames />}
+      <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[2px] flex items-center justify-center px-6">
+        <div className="bg-[#fffbf0]/95 rounded-3xl shadow-2xl px-8 py-10 max-w-sm w-full border border-[#e8d9c8]">
+          <div className="flex flex-col items-center gap-5">
+            {showCards && <MemoryCardsFlight />}
             {motion === 'letter' && <LetterFlight />}
-            <p className="text-sm font-black text-center text-gray-700 leading-snug max-w-xs">
+            <p className="text-sm font-black text-center text-[#5c4a3a] leading-snug max-w-xs">
               {message}
             </p>
           </div>
@@ -95,37 +96,27 @@ function LetterFlight() {
   );
 }
 
-/** AP-01 — 2 cục bông xù + khung tranh */
-function FluffFrames() {
-  const frames = [
-    { t: '8%', l: '6%', r: '-12deg', d: '0s' },
-    { t: '0%', l: '38%', r: '8deg', d: '0.35s' },
-    { t: '12%', l: '72%', r: '-6deg', d: '0.7s' },
-    { t: '58%', l: '4%', r: '10deg', d: '0.2s' },
-    { t: '62%', l: '70%', r: '-14deg', d: '0.55s' },
+/** AP-01 — khung kỷ niệm: thẻ nhỏ bay vào thẻ chính */
+function MemoryCardsFlight() {
+  const flying = [
+    { delay: '0s', opacity: 0.95 },
+    { delay: '0.22s', opacity: 0.55 },
+    { delay: '0.44s', opacity: 0.32 },
   ];
 
   return (
-    <div className="relative w-44 h-36" aria-hidden>
-      {frames.map((f, i) => (
+    <div className="relative w-40 h-44" aria-hidden>
+      {flying.map((f, i) => (
         <span
           key={i}
-          className="om-frame-float absolute w-9 h-11 rounded-md border-[3px] border-[var(--om-primary-soft)] bg-[color-mix(in_srgb,var(--om-tint)_70%,white)] shadow-sm"
+          className="om-mem-fly absolute left-2 top-2 w-14 h-[4.5rem] rounded-xl border-[3px] border-[#c4a484] bg-[#ddc4a8]/90 shadow-sm"
           style={{
-            top: f.t,
-            left: f.l,
-            ['--om-frame-r']: f.r,
-            animationDelay: f.d,
+            animationDelay: f.delay,
+            opacity: f.opacity,
           }}
-        >
-          <span className="absolute inset-1 rounded-sm bg-[color-mix(in_srgb,var(--om-lavender)_35%,white)]" />
-        </span>
+        />
       ))}
-
-      <div className="absolute left-1/2 bottom-2 -translate-x-1/2 flex items-end -space-x-3">
-        <span className="om-fluff om-fluff-a inline-block w-14 h-14 rounded-full bg-[var(--om-primary)] shadow-inner" />
-        <span className="om-fluff om-fluff-b inline-block w-12 h-12 rounded-full bg-[var(--om-accent)] shadow-inner relative z-10" />
-      </div>
+      <div className="om-mem-main absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[42%] w-[5.25rem] h-[6.75rem] rounded-2xl border-[4px] border-[#b89379] bg-white shadow-md" />
     </div>
   );
 }
