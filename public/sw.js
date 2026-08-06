@@ -1,11 +1,28 @@
-/* Service Worker — Web Push + notification click */
+/* Service Worker — Web Push + notification click (không cache HTML/JS) */
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      // Xóa cache cũ nếu có (tránh iOS/PWA kẹt bản cũ)
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch {
+        /* ignore */
+      }
+      await self.clients.claim();
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach((client) => {
+        client.postMessage({ type: 'OM_SW_ACTIVATED' });
+      });
+    })()
+  );
 });
+
+// Không intercept fetch — luôn để mạng/CDN lo HTML & assets
 
 self.addEventListener('push', (event) => {
   let data = { title: 'Our Memory', body: 'Có gì đó mới từ người ấy…', url: '/' };
