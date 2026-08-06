@@ -6,6 +6,28 @@ import { Music, X, Disc, Trash2, ChevronDown, Plus } from 'lucide-react';
 import { LOADING_COPY } from '../lib/loadingCopy';
 import { isIosDevice } from '../lib/device';
 
+function loadYoutubeApi() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  return new Promise((resolve) => {
+    const prior = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      try {
+        prior?.();
+      } catch {
+        /* ignore */
+      }
+      resolve(window.YT);
+    };
+    if (!document.getElementById('om-youtube-api')) {
+      const tag = document.createElement('script');
+      tag.id = 'om-youtube-api';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+  });
+}
+
 const MusicPlayer = () => {
   const { sessionUserId, spaceId } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -15,20 +37,14 @@ const MusicPlayer = () => {
   const [videoId, setVideoId] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [frameBox, setFrameBox] = useState(null);
-  // iOS chặn autoplay có tiếng — cần 1 lần chạm mới gắn iframe autoplay
+  // iOS: cần chạm + player phải còn trong viewport (không opacity:0 / off-screen)
   const [audioUnlocked, setAudioUnlocked] = useState(() => !isIosDevice());
-  const [playerNonce, setPlayerNonce] = useState(0);
   const firstPlaylistLoad = useRef(true);
   const slotRef = useRef(null);
   const panelRef = useRef(null);
-
-  const unlockAudio = useCallback(() => {
-    if (audioUnlocked) return;
-    flushSync(() => {
-      setAudioUnlocked(true);
-      setPlayerNonce((n) => n + 1);
-    });
-  }, [audioUnlocked]);
+  const ytMountRef = useRef(null);
+  const ytPlayerRef = useRef(null);
+  const wantedVideoRef = useRef('');
 
   const fetchPlaylist = useCallback(async () => {
     if (!spaceId) {
@@ -121,13 +137,108 @@ const MusicPlayer = () => {
     };
   }, [isExpanded]);
 
+  // YouTube IFrame API — play khi đã unlock; host luôn nằm trong viewport
+  useEffect(() => {
+    wantedVideoRef.current = videoId || '';
+    if (!audioUnlocked || !videoId || !ytMountRef.current) return undefined;
+
+    let cancelled = false;
+
+    const ensurePlayer = async () => {
+      const YT = await loadYoutubeApi();
+      if (cancelled || !YT?.Player || !ytMountRef.current) return;
+
+      const id = wantedVideoRef.current;
+      if (!id) return;
+
+      const existing = ytPlayerRef.current;
+      if (existing?.loadVideoById) {
+        try {
+          existing.loadVideoById({ videoId: id });
+          existing.playVideo?.();
+          return;
+        } catch {
+          try {
+            existing.destroy?.();
+          } catch {
+            /* ignore */
+          }
+          ytPlayerRef.current = null;
+        }
+      }
+
+      ytMountRef.current.innerHTML = '';
+      ytPlayerRef.current = new YT.Player(ytMountRef.current, {
+        width: '100%',
+        height: '100%',
+        videoId: id,
+        playerVars: {
+          autoplay: 1,
+          playsinline: 1,
+          rel: 0,
+          modestbranding: 1,
+          controls: 1,
+          loop: 1,
+          playlist: id,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: (event) => {
+            if (cancelled) return;
+            try {
+              event.target.playVideo();
+            } catch {
+              /* iOS có thể cần thêm 1 tap trên player */
+            }
+          },
+        },
+      });
+    };
+
+    void ensurePlayer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [audioUnlocked, videoId]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        ytPlayerRef.current?.destroy?.();
+      } catch {
+        /* ignore */
+      }
+      ytPlayerRef.current = null;
+    };
+  }, []);
+
+  const unlockAndPlay = useCallback(() => {
+    const wasLocked = !audioUnlocked;
+    flushSync(() => {
+      setAudioUnlocked(true);
+      // Mở panel lần đầu trên iOS để player visible (WebKit chặn media ẩn)
+      if (wasLocked && isIosDevice()) setIsExpanded(true);
+    });
+    window.setTimeout(() => {
+      try {
+        ytPlayerRef.current?.playVideo?.();
+      } catch {
+        /* ignore */
+      }
+    }, 400);
+  }, [audioUnlocked]);
+
   const closePanel = () => {
     setShowDropdown(false);
     setIsExpanded(false);
   };
 
   const togglePanel = () => {
-    unlockAudio();
+    if (!audioUnlocked) {
+      unlockAndPlay();
+      return;
+    }
     setIsExpanded((open) => {
       if (open) setShowDropdown(false);
       return !open;
@@ -165,6 +276,7 @@ const MusicPlayer = () => {
     fetchPlaylist();
   };
 
+  // Expanded: khớp ô video. Collapsed: vẫn trong viewport (1 ô nhỏ) — iOS mới cho phát
   const playerHostStyle =
     isExpanded && frameBox
       ? {
@@ -181,37 +293,20 @@ const MusicPlayer = () => {
         }
       : {
           position: 'fixed',
-          top: 0,
-          left: -10000,
-          width: 320,
-          height: 180,
-          zIndex: -1,
+          right: 20,
+          bottom: 96,
+          width: audioUnlocked ? 44 : 1,
+          height: audioUnlocked ? 44 : 1,
+          zIndex: 95,
           pointerEvents: 'none',
-          opacity: 0,
+          opacity: audioUnlocked ? 0.04 : 0.01,
           overflow: 'hidden',
+          borderRadius: 12,
         };
 
-  const embedSrc = videoId
-    ? `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`
-    : '';
-
   const player = (
-    <div aria-hidden={!isExpanded} className="bg-black shadow-lg" style={playerHostStyle}>
-      {audioUnlocked && videoId ? (
-        <iframe
-          key={`${videoId}-${playerNonce}`}
-          width="100%"
-          height="100%"
-          src={embedSrc}
-          frameBorder="0"
-          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen={isExpanded}
-          title="music"
-          tabIndex={isExpanded ? 0 : -1}
-          className="h-full w-full border-0"
-          style={{ pointerEvents: isExpanded ? 'auto' : 'none' }}
-        />
-      ) : null}
+    <div className="bg-black" style={playerHostStyle} aria-hidden={!isExpanded}>
+      <div ref={ytMountRef} className="h-full w-full" />
     </div>
   );
 
@@ -223,7 +318,7 @@ const MusicPlayer = () => {
         {!audioUnlocked && (
           <button
             type="button"
-            onClick={unlockAudio}
+            onClick={unlockAndPlay}
             className="pointer-events-auto self-end mb-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-wider shadow-xl border backdrop-blur-md"
             style={{
               background: 'color-mix(in srgb, var(--om-primary) 92%, white)',
@@ -262,8 +357,13 @@ const MusicPlayer = () => {
             ref={slotRef}
             className="rounded-2xl overflow-hidden mb-3 md:mb-4 shadow-inner bg-black aspect-video relative z-0 border border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)]"
           >
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 text-center">
-              {audioUnlocked ? 'Đang phát…' : 'Chạm “Phát nhạc” để nghe trên iPhone'}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/50 px-4 text-center">
+              {audioUnlocked ? 'Đang phát…' : 'Chạm nút phát nhạc'}
+              {audioUnlocked && isIosDevice() && (
+                <span className="normal-case tracking-normal font-semibold text-white/70 text-[11px]">
+                  Nếu chưa nghe, chạm nút ▶ trên video một lần
+                </span>
+              )}
             </div>
           </div>
 
@@ -287,10 +387,15 @@ const MusicPlayer = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        unlockAudio();
                         setVideoId(song.youtube_id);
-                        setPlayerNonce((n) => n + 1);
                         setShowDropdown(false);
+                        window.setTimeout(() => {
+                          try {
+                            ytPlayerRef.current?.playVideo?.();
+                          } catch {
+                            /* ignore */
+                          }
+                        }, 300);
                       }}
                       className="flex-1 truncate text-left min-w-0"
                     >
