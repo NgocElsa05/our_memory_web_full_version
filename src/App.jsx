@@ -26,6 +26,7 @@ import MilestoneCelebration from './components/MilestoneCelebration';
 import { useUnreadLettersCount } from './hooks/useUnreadLettersCount';
 import { getThemeByKey, DEFAULT_THEME_KEY, getThemeCssVars } from './lib/themes';
 import { LOADING_COPY } from './lib/loadingCopy';
+import { pendingInvitePath, readPendingInvite } from './lib/invite';
 
 function LoadingScreen({ message = LOADING_COPY.FS_AUTH }) {
   return <CuteLoader variant="fullscreen" message={message} />;
@@ -50,6 +51,15 @@ function stepPath(step) {
   }
 }
 
+/** User 2 còn lời mời + chưa vào space → luôn về /invite, không tạo space như user 1 */
+function pathForOnboardingStep(step) {
+  if (step === 'need_space') {
+    const inviteTo = pendingInvitePath();
+    if (inviteTo) return inviteTo;
+  }
+  return stepPath(step) || '/onboarding/space';
+}
+
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
   const { onboardingStep, loading: spaceLoading } = useSpace();
@@ -58,8 +68,7 @@ function PublicOnly({ children }) {
     return <LoadingScreen message={LOADING_COPY.FS_SPACE} />;
   }
   if (user) {
-    const to = stepPath(onboardingStep) || '/onboarding/space';
-    return <Navigate to={to} replace />;
+    return <Navigate to={pathForOnboardingStep(onboardingStep)} replace />;
   }
   return children;
 }
@@ -97,8 +106,12 @@ function OnboardingGate({ expect, children }) {
   if (onboardingStep === 'logged_out') {
     return <Navigate to="/welcome" replace />;
   }
+  // Đang ở màn tạo space nhưng còn lời mời → đá về join (user 2)
+  if (expect === 'need_space' && onboardingStep === 'need_space' && readPendingInvite()) {
+    return <Navigate to={pendingInvitePath()} replace />;
+  }
   if (onboardingStep !== expect && onboardingStep !== 'loading') {
-    const to = stepPath(onboardingStep);
+    const to = pathForOnboardingStep(onboardingStep);
     if (to) return <Navigate to={to} replace />;
   }
   return children;

@@ -4,6 +4,7 @@ import { supabase } from '../../supabase';
 import { useSpace } from '../../context/SpaceContext';
 import CuteLoader from '../../components/CuteLoader';
 import { LOADING_COPY } from '../../lib/loadingCopy';
+import { pendingInvitePath, readPendingInvite } from '../../lib/invite';
 
 const NEXT_KEY = 'auth_oauth_next';
 
@@ -12,11 +13,32 @@ export function saveOAuthNext(path) {
 }
 
 export function readOAuthNext() {
-  return sessionStorage.getItem(NEXT_KEY) || '/onboarding/space';
+  return sessionStorage.getItem(NEXT_KEY) || '';
 }
 
 export function clearOAuthNext() {
   sessionStorage.removeItem(NEXT_KEY);
+}
+
+/** Ưu tiên lời mời đang chờ → oauth next → bước onboarding */
+function resolveAfterAuthPath(onboardingStep) {
+  const inviteTo = pendingInvitePath();
+  if (inviteTo && (onboardingStep === 'need_space' || onboardingStep === 'logged_out' || !onboardingStep)) {
+    return inviteTo;
+  }
+  const oauthNext = readOAuthNext();
+  if (oauthNext.startsWith('/invite')) return oauthNext;
+  if (inviteTo && onboardingStep === 'need_space') return inviteTo;
+
+  const map = {
+    need_space: inviteTo || '/onboarding/space',
+    need_dates: '/onboarding/dates',
+    need_theme: '/onboarding/theme',
+    need_preview: '/onboarding/space-preview',
+    need_profile: '/onboarding/profile',
+    ready: '/',
+  };
+  return map[onboardingStep] || inviteTo || '/onboarding/space';
 }
 
 function mapOAuthError(params) {
@@ -156,27 +178,22 @@ export default function AuthCallback() {
   useEffect(() => {
     if (failed) return;
     if (spaceLoading || onboardingStep === 'loading' || onboardingStep === 'logged_out') return;
-    if (onboardingStep === 'ready') {
-      clearOAuthNext();
-      navigate('/', { replace: true });
-      return;
-    }
     if (
+      onboardingStep === 'ready' ||
       onboardingStep === 'need_space' ||
       onboardingStep === 'need_dates' ||
       onboardingStep === 'need_theme' ||
       onboardingStep === 'need_preview' ||
       onboardingStep === 'need_profile'
     ) {
-      const map = {
-        need_space: '/onboarding/space',
-        need_dates: '/onboarding/dates',
-        need_theme: '/onboarding/theme',
-        need_preview: '/onboarding/space-preview',
-        need_profile: '/onboarding/profile',
-      };
+      const to = resolveAfterAuthPath(onboardingStep);
       clearOAuthNext();
-      navigate(map[onboardingStep], { replace: true });
+      // Giữ pending invite đến khi join xong (Invite.jsx clear)
+      if (onboardingStep === 'need_space' && readPendingInvite()) {
+        navigate(pendingInvitePath(), { replace: true });
+        return;
+      }
+      navigate(to, { replace: true });
     }
   }, [onboardingStep, spaceLoading, navigate, failed]);
 

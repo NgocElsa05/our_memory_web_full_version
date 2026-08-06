@@ -9,7 +9,7 @@ import AuthLayout, {
   mapAuthError,
 } from '../../components/auth/AuthLayout';
 import { useAuth } from '../../context/AuthContext';
-import { savePendingInvite } from '../../lib/invite';
+import { pendingInvitePath, savePendingInvite } from '../../lib/invite';
 import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function Signup() {
@@ -27,9 +27,7 @@ export default function Signup() {
   if (invite) savePendingInvite(invite);
 
   const goNext = () => {
-    navigate(invite ? `/invite/${encodeURIComponent(invite)}` : '/onboarding/space', {
-      replace: true,
-    });
+    navigate(pendingInvitePath() || '/onboarding/space', { replace: true });
   };
 
   const onSubmit = async (e) => {
@@ -47,6 +45,7 @@ export default function Signup() {
     const trimmed = email.trim();
     setLoading(true);
     try {
+      if (invite) savePendingInvite(invite);
       const data = await signUpWithEmail(trimmed, password);
 
       // Confirm email tắt → thường có session ngay. Nếu không (user đã tồn tại / cấu hình khác) → đăng nhập luôn.
@@ -83,7 +82,8 @@ export default function Signup() {
     setLoading(true);
     try {
       if (invite) savePendingInvite(invite);
-      await signInWithGoogle(invite ? `/invite/${invite}` : '/onboarding/space');
+      const inviteTo = pendingInvitePath();
+      await signInWithGoogle(inviteTo || '/onboarding/space');
     } catch (err) {
       setError(mapAuthError(err));
       setLoading(false);

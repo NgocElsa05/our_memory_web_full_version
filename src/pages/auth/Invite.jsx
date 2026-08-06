@@ -37,8 +37,19 @@ export default function Invite() {
   useEffect(() => {
     if (onboardingStep === 'ready') {
       navigate('/', { replace: true });
+      return;
     }
-  }, [onboardingStep, navigate]);
+    // Đã join rồi → sang preview / profile, đừng kẹt lại trang mời
+    if (user && member && onboardingStep === 'need_preview') {
+      clearPendingInvite();
+      navigate('/onboarding/space-preview', { replace: true });
+      return;
+    }
+    if (user && member && onboardingStep === 'need_profile') {
+      clearPendingInvite();
+      navigate('/onboarding/profile', { replace: true });
+    }
+  }, [onboardingStep, navigate, user, member]);
 
   useEffect(() => {
     let cancelled = false;

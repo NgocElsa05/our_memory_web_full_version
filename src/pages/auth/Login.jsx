@@ -9,7 +9,7 @@ import AuthLayout, {
   mapAuthError,
 } from '../../components/auth/AuthLayout';
 import { useAuth } from '../../context/AuthContext';
-import { savePendingInvite } from '../../lib/invite';
+import { pendingInvitePath, savePendingInvite } from '../../lib/invite';
 import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function Login() {
@@ -25,20 +25,21 @@ export default function Login() {
 
   if (invite) savePendingInvite(invite);
 
-  const afterAuthPath = invite ? `/invite/${encodeURIComponent(invite)}` : '/onboarding/space';
+  const afterAuthPath = () => pendingInvitePath() || '/onboarding/space';
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
+      if (invite) savePendingInvite(invite);
       const data = await signInWithEmail(email.trim(), password);
       if (!data.session) {
         setError('Vào hộp thư và bấm link xác nhận giúp mình nha.');
         return;
       }
-      // Chờ 1 tick để context nhận session, rồi vào onboarding (không về / rồi bị đá ra welcome)
-      navigate(afterAuthPath, { replace: true });
+      // PublicOnly cũng tôn trọng pending invite — về /invite chứ không tạo space
+      navigate(afterAuthPath(), { replace: true });
     } catch (err) {
       setError(mapAuthError(err));
     } finally {
@@ -51,7 +52,8 @@ export default function Login() {
     setLoading(true);
     try {
       if (invite) savePendingInvite(invite);
-      await signInWithGoogle(invite ? `/invite/${invite}` : '/');
+      const inviteTo = pendingInvitePath();
+      await signInWithGoogle(inviteTo || '/');
     } catch (err) {
       setError(mapAuthError(err));
       setLoading(false);

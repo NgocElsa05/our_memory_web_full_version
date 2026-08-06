@@ -9,7 +9,7 @@ import AuthLayout, {
 import { useAuth } from '../../context/AuthContext';
 import { useSpace } from '../../context/SpaceContext';
 import { supabase } from '../../supabase';
-import { generateInviteCode } from '../../lib/invite';
+import { generateInviteCode, pendingInvitePath, readPendingInvite } from '../../lib/invite';
 import { LOADING_COPY } from '../../lib/loadingCopy';
 
 export default function CreateSpace() {
@@ -20,6 +20,10 @@ export default function CreateSpace() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // User 2 còn lời mời — không cho tạo space / chọn theme như user 1
+  if (!member && readPendingInvite()) {
+    return <Navigate to={pendingInvitePath()} replace />;
+  }
   if (member) return <Navigate to="/" replace />;
 
   const onSubmit = async (e) => {

@@ -1,19 +1,61 @@
 export const PENDING_INVITE_KEY = 'pendingInviteCode';
 
+function normalizeInviteCode(code) {
+  return String(code || '')
+    .trim()
+    .toUpperCase();
+}
+
+/** Lưu cả localStorage + sessionStorage — OAuth / đổi tab vẫn giữ lời mời. */
 export function savePendingInvite(code) {
-  if (!code) {
-    sessionStorage.removeItem(PENDING_INVITE_KEY);
+  const normalized = normalizeInviteCode(code);
+  if (!normalized) {
+    clearPendingInvite();
     return;
   }
-  sessionStorage.setItem(PENDING_INVITE_KEY, String(code).trim());
+  try {
+    localStorage.setItem(PENDING_INVITE_KEY, normalized);
+  } catch {
+    /* private mode */
+  }
+  try {
+    sessionStorage.setItem(PENDING_INVITE_KEY, normalized);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function readPendingInvite() {
-  return sessionStorage.getItem(PENDING_INVITE_KEY) || '';
+  try {
+    const fromLocal = localStorage.getItem(PENDING_INVITE_KEY);
+    if (fromLocal) return normalizeInviteCode(fromLocal);
+  } catch {
+    /* ignore */
+  }
+  try {
+    return normalizeInviteCode(sessionStorage.getItem(PENDING_INVITE_KEY) || '');
+  } catch {
+    return '';
+  }
 }
 
 export function clearPendingInvite() {
-  sessionStorage.removeItem(PENDING_INVITE_KEY);
+  try {
+    localStorage.removeItem(PENDING_INVITE_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    sessionStorage.removeItem(PENDING_INVITE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Path quay lại lời mời sau auth — rỗng nếu không có pending. */
+export function pendingInvitePath() {
+  const code = readPendingInvite();
+  return code ? `/invite/${encodeURIComponent(code)}` : '';
 }
 
 /** Mã mời ngắn, dễ share (không dùng dấu gạch). */
