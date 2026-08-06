@@ -24,6 +24,7 @@ import MusicPlayer from './components/MusicPlayer';
 import CuteLoader from './components/CuteLoader';
 import MilestoneCelebration from './components/MilestoneCelebration';
 import InAppNotifier from './components/InAppNotifier';
+import IosPullToRefresh from './components/IosPullToRefresh';
 import { useUnreadLettersCount } from './hooks/useUnreadLettersCount';
 import { getThemeByKey, DEFAULT_THEME_KEY, getThemeCssVars } from './lib/themes';
 import { LOADING_COPY } from './lib/loadingCopy';
@@ -420,6 +421,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <Router>
+      <IosPullToRefresh />
       <AuthProvider>
         <SpaceProvider>
           <AppRoutes />

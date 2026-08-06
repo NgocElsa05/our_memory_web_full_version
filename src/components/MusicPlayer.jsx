@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '../supabase';
 import { useSession } from '../context/SessionContext';
 import { Music, X, Disc, Trash2, ChevronDown, Plus } from 'lucide-react';
 import { LOADING_COPY } from '../lib/loadingCopy';
+import { isIosDevice } from '../lib/device';
 
 const MusicPlayer = () => {
   const { sessionUserId, spaceId } = useSession();
@@ -14,9 +15,20 @@ const MusicPlayer = () => {
   const [videoId, setVideoId] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [frameBox, setFrameBox] = useState(null);
+  // iOS chặn autoplay có tiếng — cần 1 lần chạm mới gắn iframe autoplay
+  const [audioUnlocked, setAudioUnlocked] = useState(() => !isIosDevice());
+  const [playerNonce, setPlayerNonce] = useState(0);
   const firstPlaylistLoad = useRef(true);
   const slotRef = useRef(null);
   const panelRef = useRef(null);
+
+  const unlockAudio = useCallback(() => {
+    if (audioUnlocked) return;
+    flushSync(() => {
+      setAudioUnlocked(true);
+      setPlayerNonce((n) => n + 1);
+    });
+  }, [audioUnlocked]);
 
   const fetchPlaylist = useCallback(async () => {
     if (!spaceId) {
@@ -62,7 +74,6 @@ const MusicPlayer = () => {
     if (!isExpanded) setShowDropdown(false);
   }, [isExpanded]);
 
-  // iframe portal ra body — đo lại sau animation (mobile scale/translate hay lệch)
   useLayoutEffect(() => {
     if (!isExpanded) {
       setFrameBox(null);
@@ -116,6 +127,7 @@ const MusicPlayer = () => {
   };
 
   const togglePanel = () => {
+    unlockAudio();
     setIsExpanded((open) => {
       if (open) setShowDropdown(false);
       return !open;
@@ -179,13 +191,18 @@ const MusicPlayer = () => {
           overflow: 'hidden',
         };
 
+  const embedSrc = videoId
+    ? `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`
+    : '';
+
   const player = (
     <div aria-hidden={!isExpanded} className="bg-black shadow-lg" style={playerHostStyle}>
-      {videoId ? (
+      {audioUnlocked && videoId ? (
         <iframe
+          key={`${videoId}-${playerNonce}`}
           width="100%"
           height="100%"
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&modestbranding=1&rel=0&playsinline=1`}
+          src={embedSrc}
           frameBorder="0"
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen={isExpanded}
@@ -203,6 +220,22 @@ const MusicPlayer = () => {
       {typeof document !== 'undefined' ? createPortal(player, document.body) : null}
 
       <div className="fixed inset-x-0 bottom-0 md:inset-x-auto md:bottom-8 md:right-8 z-[100] flex flex-col items-stretch md:items-end font-sans pointer-events-none px-3 pb-[5.5rem] md:px-0 md:pb-0">
+        {!audioUnlocked && (
+          <button
+            type="button"
+            onClick={unlockAudio}
+            className="pointer-events-auto self-end mb-2 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-wider shadow-xl border backdrop-blur-md"
+            style={{
+              background: 'color-mix(in srgb, var(--om-primary) 92%, white)',
+              color: 'var(--om-on-primary)',
+              borderColor: 'color-mix(in srgb, var(--om-primary-soft) 40%, transparent)',
+              boxShadow: '0 8px 24px var(--om-shadow)',
+            }}
+          >
+            Chạm để phát nhạc
+          </button>
+        )}
+
         <div
           ref={panelRef}
           aria-hidden={!isExpanded}
@@ -229,8 +262,8 @@ const MusicPlayer = () => {
             ref={slotRef}
             className="rounded-2xl overflow-hidden mb-3 md:mb-4 shadow-inner bg-black aspect-video relative z-0 border border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)]"
           >
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-white/40">
-              Đang phát…
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 text-center">
+              {audioUnlocked ? 'Đang phát…' : 'Chạm “Phát nhạc” để nghe trên iPhone'}
             </div>
           </div>
 
@@ -254,7 +287,9 @@ const MusicPlayer = () => {
                     <button
                       type="button"
                       onClick={() => {
+                        unlockAudio();
                         setVideoId(song.youtube_id);
+                        setPlayerNonce((n) => n + 1);
                         setShowDropdown(false);
                       }}
                       className="flex-1 truncate text-left min-w-0"
@@ -331,7 +366,7 @@ const MusicPlayer = () => {
             className={`flex flex-col overflow-hidden transition-all duration-300 text-left ${isExpanded ? 'w-0 opacity-0 pr-0' : 'w-32 opacity-100'}`}
           >
             <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--om-primary)' }}>
-              Đang phát
+              {audioUnlocked ? 'Đang phát' : 'Chạm phát'}
             </span>
             <span className="text-xs font-bold text-gray-700 truncate">{currentSongTitle}</span>
           </div>
