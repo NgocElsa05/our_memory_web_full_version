@@ -1,0 +1,24 @@
+# Paste into ios/App/App/Info.plist (or Xcode URL Types UI)
+
+# URL Types example (XML fragment):
+#
+# <key>CFBundleURLTypes</key>
+# <array>
+#   <dict>
+#     <key>CFBundleURLName</key>
+#     <string>com.ourmemory.app</string>
+#     <key>CFBundleURLSchemes</key>
+#     <array>
+#       <string>ourmemory</string>
+#     </array>
+#   </dict>
+# </array>
+
+App Group (both App + Widget targets):
+  group.com.ourmemory.app
+
+Bundle ID (App):
+  com.ourmemory.app
+
+Bundle ID (Widget) — Xcode default:
+  com.ourmemory.app.OurMemoryWidget

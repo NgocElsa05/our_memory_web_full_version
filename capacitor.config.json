@@ -1,0 +1,14 @@
+{
+  "appId": "com.ourmemory.app",
+  "appName": "Our Memory",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "scheme": "Our Memory"
+  },
+  "plugins": {}
+}

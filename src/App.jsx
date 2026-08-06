@@ -25,6 +25,8 @@ import CuteLoader from './components/CuteLoader';
 import MilestoneCelebration from './components/MilestoneCelebration';
 import InAppNotifier from './components/InAppNotifier';
 import IosPullToRefresh from './components/IosPullToRefresh';
+import CoupleWidgetSync from './components/CoupleWidgetSync';
+import DeepLinkHandler from './components/DeepLinkHandler';
 import { useUnreadLettersCount } from './hooks/useUnreadLettersCount';
 import { getThemeByKey, DEFAULT_THEME_KEY, getThemeCssVars } from './lib/themes';
 import { LOADING_COPY } from './lib/loadingCopy';
@@ -220,6 +222,7 @@ function AuthenticatedShell() {
       <MusicPlayer />
       <MilestoneCelebration />
       <InAppNotifier />
+      <CoupleWidgetSync />
 
       <aside className="hidden md:flex w-64 bg-white border-r flex-col p-6 sticky top-0 h-screen shadow-sm om-border-soft">
         <div className="flex items-center gap-2 mb-10 px-2">
@@ -422,6 +425,7 @@ export default function App() {
   return (
     <Router>
       <IosPullToRefresh />
+      <DeepLinkHandler />
       <AuthProvider>
         <SpaceProvider>
           <AppRoutes />

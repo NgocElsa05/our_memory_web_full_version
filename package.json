@@ -9,9 +9,16 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "readme:sync": "node scripts/sync-readme.mjs",
-    "migrate:gallery": "node scripts/migrate-gallery-to-cloudinary.mjs"
+    "migrate:gallery": "node scripts/migrate-gallery-to-cloudinary.mjs",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:ios": "npm run build && npx cap sync ios",
+    "cap:open:ios": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@supabase/supabase-js": "^2.105.0",
     "@tanstack/react-query": "^5.100.11",
     "dotenv": "^17.4.2",

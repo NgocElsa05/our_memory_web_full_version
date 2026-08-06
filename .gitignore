@@ -27,9 +27,15 @@ dist-ssr
 *.md
 !README.md
 !LOADING_ANIMATIONS.md
+!IOS_WIDGET.md
 
-# Vercel CLI (project link; keep out of git)
-.vercel
+# Capacitor / Xcode build artifacts (ios/ project itself is generated on Mac — see IOS_WIDGET.md)
+android/
+.capacitor/
+**/xcuserdata/
+**/DerivedData/
+*.xcuserstate
+
 
 # Editor directories and files
 .vscode/*
