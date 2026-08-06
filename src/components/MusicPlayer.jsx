@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../supabase';
 import { useSession } from '../context/SessionContext';
 import { Music, X, Disc, Trash2, ChevronDown, Plus } from 'lucide-react';
@@ -15,6 +16,7 @@ const MusicPlayer = () => {
   const [frameBox, setFrameBox] = useState(null);
   const firstPlaylistLoad = useRef(true);
   const slotRef = useRef(null);
+  const panelRef = useRef(null);
 
   const fetchPlaylist = useCallback(async () => {
     if (!spaceId) {
@@ -60,17 +62,18 @@ const MusicPlayer = () => {
     if (!isExpanded) setShowDropdown(false);
   }, [isExpanded]);
 
-  // Dock iframe vào ô video khi mở; đóng thì đẩy hẳn khỏi màn hình (không nhận click)
+  // iframe portal ra body — đo lại sau animation (mobile scale/translate hay lệch)
   useLayoutEffect(() => {
     if (!isExpanded) {
       setFrameBox(null);
       return undefined;
     }
 
-    const update = () => {
+    const measure = () => {
       const el = slotRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) return;
       setFrameBox({
         top: r.top,
         left: r.left,
@@ -79,15 +82,30 @@ const MusicPlayer = () => {
       });
     };
 
-    update();
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    measure();
+    const raf1 = requestAnimationFrame(measure);
+    const t1 = window.setTimeout(measure, 80);
+    const t2 = window.setTimeout(measure, 560);
+
+    const onTransitionEnd = (e) => {
+      if (panelRef.current && (e.target === panelRef.current || panelRef.current.contains(e.target))) {
+        measure();
+      }
+    };
+
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    window.addEventListener('transitionend', onTransitionEnd);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
     if (ro && slotRef.current) ro.observe(slotRef.current);
 
     return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
+      cancelAnimationFrame(raf1);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+      window.removeEventListener('transitionend', onTransitionEnd);
       ro?.disconnect();
     };
   }, [isExpanded]);
@@ -122,7 +140,6 @@ const MusicPlayer = () => {
         setLink('');
         setSongTitle('');
         fetchPlaylist();
-        setIsExpanded(false);
       } else {
         alert(error.message);
       }
@@ -144,9 +161,11 @@ const MusicPlayer = () => {
           left: frameBox.left,
           width: frameBox.width,
           height: frameBox.height,
-          zIndex: 110,
+          zIndex: 120,
           pointerEvents: 'auto',
           opacity: 1,
+          borderRadius: '1rem',
+          overflow: 'hidden',
         }
       : {
           position: 'fixed',
@@ -160,74 +179,73 @@ const MusicPlayer = () => {
           overflow: 'hidden',
         };
 
+  const player = (
+    <div aria-hidden={!isExpanded} className="bg-black shadow-lg" style={playerHostStyle}>
+      {videoId ? (
+        <iframe
+          width="100%"
+          height="100%"
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&modestbranding=1&rel=0&playsinline=1`}
+          frameBorder="0"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen={isExpanded}
+          title="music"
+          tabIndex={isExpanded ? 0 : -1}
+          className="h-full w-full border-0"
+          style={{ pointerEvents: isExpanded ? 'auto' : 'none' }}
+        />
+      ) : null}
+    </div>
+  );
+
   return (
     <>
-      {/* iframe tách khỏi panel — đóng popup = đẩy khỏi viewport, không tua / mở YouTube được */}
-      <div
-        aria-hidden={!isExpanded}
-        className="overflow-hidden rounded-2xl bg-black shadow-lg"
-        style={playerHostStyle}
-      >
-        {videoId ? (
-          <iframe
-            width="100%"
-            height="100%"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&modestbranding=1&rel=0`}
-            frameBorder="0"
-            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen={isExpanded}
-            title="music"
-            tabIndex={isExpanded ? 0 : -1}
-            className="h-full w-full border-0"
-            style={{ pointerEvents: isExpanded ? 'auto' : 'none' }}
-          />
-        ) : null}
-      </div>
+      {typeof document !== 'undefined' ? createPortal(player, document.body) : null}
 
-      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-[100] flex flex-col items-end font-sans pointer-events-none">
+      <div className="fixed inset-x-0 bottom-0 md:inset-x-auto md:bottom-8 md:right-8 z-[100] flex flex-col items-stretch md:items-end font-sans pointer-events-none px-3 pb-[5.5rem] md:px-0 md:pb-0">
         <div
+          ref={panelRef}
           aria-hidden={!isExpanded}
           inert={!isExpanded ? true : undefined}
-          className={`bg-white/95 backdrop-blur-xl p-5 rounded-[35px] shadow-2xl w-80 border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] transition-all duration-500 origin-bottom-right mb-4 ${
+          className={`bg-white/95 backdrop-blur-xl shadow-2xl border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] transition-all duration-500 origin-bottom md:origin-bottom-right pointer-events-auto w-full md:w-80 max-h-[min(70vh,34rem)] overflow-y-auto overflow-x-hidden custom-scrollbar ${
             isExpanded
-              ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto visible'
-              : 'opacity-0 scale-50 translate-y-10 pointer-events-none invisible absolute bottom-16 right-0'
+              ? 'opacity-100 scale-100 translate-y-0 visible mb-3 rounded-[28px] p-4 md:p-5'
+              : 'opacity-0 scale-95 translate-y-6 invisible pointer-events-none absolute bottom-16 right-3 md:right-0 w-[min(100%,20rem)] h-0 p-0 overflow-hidden border-0'
           }`}
         >
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-3 md:mb-4 sticky top-0 bg-white/90 backdrop-blur-sm z-20 -mx-1 px-1 pb-1">
             <h4
               className="text-xs font-black uppercase tracking-widest flex items-center gap-2"
               style={{ color: 'var(--om-primary)' }}
             >
               <Music size={14} /> Music Box
             </h4>
-            <button type="button" onClick={closePanel} className="text-gray-400 hover:text-red-400 transition-all">
+            <button type="button" onClick={closePanel} className="text-gray-400 hover:text-red-400 transition-all p-1">
               <X size={18} />
             </button>
           </div>
 
-          {/* Slot để dock iframe khi mở */}
           <div
             ref={slotRef}
-            className="rounded-2xl overflow-hidden mb-4 shadow-lg bg-black aspect-video relative z-0 border border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)]"
+            className="rounded-2xl overflow-hidden mb-3 md:mb-4 shadow-inner bg-black aspect-video relative z-0 border border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)]"
           >
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-white/40">
               Đang phát…
             </div>
           </div>
 
-          <div className="relative mb-4">
+          <div className="relative mb-3 md:mb-4 z-10">
             <button
               type="button"
               onClick={() => setShowDropdown(!showDropdown)}
               className="om-field w-full border border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] p-3 rounded-2xl flex justify-between items-center text-xs font-bold hover:opacity-90 transition-all"
             >
-              <span className="truncate mr-2">{currentSongTitle}</span>
-              <ChevronDown size={16} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              <span className="truncate mr-2 text-left text-[var(--om-on-field)]">{currentSongTitle}</span>
+              <ChevronDown size={16} className={`shrink-0 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showDropdown && isExpanded && (
-              <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] rounded-2xl shadow-xl max-h-40 overflow-y-auto z-[999] py-1 custom-scrollbar">
+              <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] rounded-2xl shadow-xl max-h-40 overflow-y-auto z-30 py-1 custom-scrollbar">
                 {playlist.map((song) => (
                   <div
                     key={song.id}
@@ -239,14 +257,15 @@ const MusicPlayer = () => {
                         setVideoId(song.youtube_id);
                         setShowDropdown(false);
                       }}
-                      className="flex-1 truncate text-left"
+                      className="flex-1 truncate text-left min-w-0"
                     >
-                      <span className="text-[11px] font-medium text-gray-700 truncate">{song.title}</span>
+                      <span className="text-[11px] font-medium text-gray-700 truncate block">{song.title}</span>
                     </button>
                     <button
                       type="button"
                       onClick={(e) => deleteSong(song.id, e)}
-                      className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all ml-2 p-1"
+                      className="text-gray-400 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-all ml-2 p-2 shrink-0"
+                      aria-label="Xóa bài"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -259,33 +278,34 @@ const MusicPlayer = () => {
             )}
           </div>
 
-          <div className="space-y-2 pt-4 border-t border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)]">
+          <div className="space-y-2 pt-3 border-t border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)] relative z-10">
             <input
               type="text"
               value={songTitle}
               onChange={(e) => setSongTitle(e.target.value)}
               placeholder="Tên bài hát..."
               tabIndex={isExpanded ? 0 : -1}
-              className="om-field w-full border border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] rounded-xl px-3 py-2 text-xs outline-none focus:border-[var(--om-primary)] transition-all"
+              className="om-field w-full border border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] rounded-xl px-3 py-2.5 text-xs text-[var(--om-on-field)] outline-none focus:border-[var(--om-primary)] transition-all"
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-stretch">
               <input
                 type="text"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="Link YouTube..."
                 tabIndex={isExpanded ? 0 : -1}
-                className="om-field flex-1 border border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] rounded-xl px-3 py-2 text-xs outline-none focus:border-[var(--om-primary)] transition-all"
+                className="om-field flex-1 min-w-0 border border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] rounded-xl px-3 py-2.5 text-xs text-[var(--om-on-field)] outline-none focus:border-[var(--om-primary)] transition-all"
               />
               <button
                 type="button"
                 onClick={handleAddMusic}
-                className="p-2 rounded-xl shrink-0 shadow-md active:scale-95 transition-all"
+                className="w-11 h-11 rounded-xl shrink-0 shadow-md active:scale-95 transition-all flex items-center justify-center"
                 style={{
                   background: 'var(--om-primary)',
                   color: 'var(--om-on-primary)',
                   boxShadow: '0 4px 14px var(--om-shadow)',
                 }}
+                aria-label="Thêm bài hát"
               >
                 <Plus size={20} />
               </button>
@@ -298,7 +318,7 @@ const MusicPlayer = () => {
           onClick={togglePanel}
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Đóng Music Box' : 'Mở Music Box'}
-          className="pointer-events-auto bg-white/95 backdrop-blur-md p-1.5 pr-4 rounded-full shadow-2xl flex items-center gap-3 border cursor-pointer hover:scale-105 transition-all"
+          className="pointer-events-auto self-end bg-white/95 backdrop-blur-md p-1.5 pr-4 rounded-full shadow-2xl flex items-center gap-3 border cursor-pointer hover:scale-105 transition-all"
           style={{ borderColor: 'color-mix(in srgb, var(--om-primary-soft) 45%, transparent)' }}
         >
           <div
@@ -308,7 +328,7 @@ const MusicPlayer = () => {
             <Disc size={20} style={{ color: 'var(--om-on-primary)' }} />
           </div>
           <div
-            className={`flex flex-col overflow-hidden transition-all duration-300 text-left ${isExpanded ? 'w-0 opacity-0' : 'w-32 opacity-100'}`}
+            className={`flex flex-col overflow-hidden transition-all duration-300 text-left ${isExpanded ? 'w-0 opacity-0 pr-0' : 'w-32 opacity-100'}`}
           >
             <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--om-primary)' }}>
               Đang phát
