@@ -37,14 +37,19 @@ function personHtml(user) {
 }
 
 function pageHtml({ origin, days, user1, user2, error }) {
+  const appUrl = `${origin}/`;
   const body = error
     ? `<div class="msg error">${esc(error)}</div>`
-    : `<a class="card" href="intent://our--memory.vercel.app/#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=https%3A%2F%2Four--memory.vercel.app%2F;end">${personHtml(user1)}<div class="mid"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="#e85a7a" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="days">${esc(String(days ?? 0))}</div><div class="label">days</div></div>${personHtml(user2)}</a>`;
+    : `<a class="card" href="${esc(appUrl)}">${personHtml(user1)}<div class="mid"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="#e85a7a" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><div class="days">${esc(String(days ?? 0))}</div><div class="label">days</div></div>${personHtml(user2)}</a>`;
 
   const preconnect =
     user1?.avatarUrl || user2?.avatarUrl
       ? `<link rel="preconnect" href="https://res.cloudinary.com" crossorigin />`
       : '';
+
+  // embed=1 = chỉ hiện widget (cho WebsiteWidget chụp ảnh).
+  // Không có embed + mở full trình duyệt → nhảy sang app chính (không kẹt /w/).
+  const openAppScript = `<script>(function(){try{var q=new URLSearchParams(location.search);if(q.get('embed')==='1')return;if(window.innerHeight>360){location.replace(${JSON.stringify(appUrl)});}}catch(e){}})();</script>`;
 
   return `<!doctype html>
 <html lang="en" style="background:#1c1c1e">
@@ -56,6 +61,7 @@ function pageHtml({ origin, days, user1, user2, error }) {
 ${preconnect}
 ${user1?.avatarUrl ? `<link rel="preload" as="image" href="${esc(user1.avatarUrl)}"/>` : ''}
 ${user2?.avatarUrl ? `<link rel="preload" as="image" href="${esc(user2.avatarUrl)}"/>` : ''}
+${openAppScript}
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#1c1c1e;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
