@@ -133,9 +133,7 @@ export default function Settings() {
     setPushMsg('');
     try {
       await enablePushNotifications({ memberId: sessionUserId, spaceId, forceResubscribe: true });
-      setPushMsg(
-        `${LOADING_COPY.IN_PUSH_OK}\nMáy này đã đăng ký lại. Nhờ partner gửi thử 1 thư để kiểm tra.`
-      );
+      setPushMsg(LOADING_COPY.IN_PUSH_OK);
     } catch (e) {
       setPushMsg(e.message || LOADING_COPY.IN_PUSH_FAIL);
     } finally {
@@ -397,15 +395,6 @@ export default function Settings() {
         <h2 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--om-primary)' }}>
           <Bell size={14} /> Thông báo
         </h2>
-        <p className="text-sm text-gray-500 font-medium">
-          Bật trong app (nút bên dưới) để máy này nhận thư / ảnh / Discovery. Chỉ bật thông báo trong
-          Cài đặt điện thoại là chưa đủ — cần đăng ký lại từ Our Memory.
-        </p>
-        {!isPushSupported() && (
-          <p className="text-xs font-semibold text-amber-700">
-            Trình duyệt / thiết bị này không hỗ trợ Web Push (iOS cần «Thêm vào MH chính» + iOS 16.4+).
-          </p>
-        )}
         <button
           type="button"
           onClick={enablePush}
@@ -413,13 +402,9 @@ export default function Settings() {
           className="w-full rounded-2xl py-3 text-xs font-black uppercase tracking-widest text-[var(--om-on-primary)] disabled:opacity-50"
           style={{ background: 'var(--om-primary)' }}
         >
-          {pushBusy ? LOADING_COPY.IN_PUSH : 'Bật / đăng ký lại thông báo trên máy này'}
+          {pushBusy ? LOADING_COPY.IN_PUSH : 'Bật thông báo trên máy này'}
         </button>
-        {pushMsg && <p className="text-xs font-semibold text-gray-600 whitespace-pre-wrap">{pushMsg}</p>}
-        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
-          Android: mở Our Memory bằng Chrome (hoặc app đã cài từ Chrome), tắt tối ưu pin cho Chrome /
-          Our Memory. Nếu máy khác nhận được mà máy này không — bấm nút trên để đăng ký lại.
-        </p>
+        {pushMsg && <p className="text-xs font-semibold text-gray-600">{pushMsg}</p>}
       </section>
 
       {/* Invite */}
