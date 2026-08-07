@@ -40,11 +40,6 @@
         justify-content: center;
         padding: 6px 8px;
       }
-      /* Preview trong browser: ô caro để thấy transparency; widget app bỏ qua */
-      body.preview-checker {
-        background-image: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) !important;
-        background-size: 16px 16px !important;
-      }
       a.card {
         display: flex;
         align-items: center;
@@ -138,21 +133,6 @@
       .msg.error {
         color: #c0392b;
       }
-      .hint {
-        position: fixed;
-        left: 8px;
-        right: 8px;
-        bottom: 8px;
-        font-size: 11px;
-        color: #666;
-        text-align: center;
-        background: rgba(255, 255, 255, 0.85);
-        padding: 8px;
-        border-radius: 8px;
-      }
-      .hint a {
-        color: #7ca1d9;
-      }
     </style>
   </head>
   <body style="background:transparent!important">
@@ -166,14 +146,6 @@
           .trim()
           .toUpperCase();
         var root = document.getElementById('root');
-        var isWidgetHost =
-          /WebsiteWidget|WebWidget|Widgetify|KWGT|Kustom/i.test(
-            navigator.userAgent
-          ) || params.get('embed') === '1';
-
-        if (params.get('preview') === '1') {
-          document.body.classList.add('preview-checker');
-        }
 
         var HEART =
           '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true">' +
@@ -229,7 +201,7 @@
               throw new Error((data && data.error) || 'not_found');
             }
             var days = data.days != null ? data.days : 0;
-            var html =
+            root.outerHTML =
               '<a class="card" href="' +
               API +
               '/" target="_blank" rel="noopener">' +
@@ -243,15 +215,6 @@
               '</div>' +
               personHtml(data.user2) +
               '</a>';
-            if (!isWidgetHost) {
-              html +=
-                '<p class="hint">Trang này đã trong suốt. App WebsiteWidget thường <b>không hỗ trợ</b> nền trong suốt (nó chụp screenshot). Dùng PNG: <a href="' +
-                API +
-                '/api/widget-png?code=' +
-                encodeURIComponent(code) +
-                '">/api/widget-png?code=…</a> trong KWGT (1 lớp Image).</p>';
-            }
-            root.outerHTML = html;
           })
           .catch(function (e) {
             root.className = 'msg error';
