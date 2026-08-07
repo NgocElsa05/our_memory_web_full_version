@@ -277,6 +277,7 @@ const MusicPlayer = () => {
   };
 
   // Expanded: khớp ô video. Collapsed: vẫn trong viewport (1 ô nhỏ) — iOS mới cho phát
+  // Khi mở list bài: hạ z-index video để dropdown không bị iframe YouTube che
   const playerHostStyle =
     isExpanded && frameBox
       ? {
@@ -285,8 +286,8 @@ const MusicPlayer = () => {
           left: frameBox.left,
           width: frameBox.width,
           height: frameBox.height,
-          zIndex: 120,
-          pointerEvents: 'auto',
+          zIndex: showDropdown ? 90 : 120,
+          pointerEvents: showDropdown ? 'none' : 'auto',
           opacity: 1,
           borderRadius: '1rem',
           overflow: 'hidden',
@@ -314,7 +315,11 @@ const MusicPlayer = () => {
     <>
       {typeof document !== 'undefined' ? createPortal(player, document.body) : null}
 
-      <div className="fixed inset-x-0 bottom-0 md:inset-x-auto md:bottom-8 md:right-8 z-[100] flex flex-col items-stretch md:items-end font-sans pointer-events-none px-3 pb-[5.5rem] md:px-0 md:pb-0">
+      <div
+        className={`fixed inset-x-0 bottom-0 md:inset-x-auto md:bottom-8 md:right-8 flex flex-col items-stretch md:items-end font-sans pointer-events-none px-3 pb-[5.5rem] md:px-0 md:pb-0 ${
+          showDropdown && isExpanded ? 'z-[140]' : 'z-[100]'
+        }`}
+      >
         {!audioUnlocked && (
           <button
             type="button"
@@ -335,7 +340,9 @@ const MusicPlayer = () => {
           ref={panelRef}
           aria-hidden={!isExpanded}
           inert={!isExpanded ? true : undefined}
-          className={`bg-white/95 backdrop-blur-xl shadow-2xl border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] transition-all duration-500 origin-bottom md:origin-bottom-right pointer-events-auto w-full md:w-80 max-h-[min(70vh,34rem)] overflow-y-auto overflow-x-hidden custom-scrollbar ${
+          className={`bg-white/95 backdrop-blur-xl shadow-2xl border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] transition-all duration-500 origin-bottom md:origin-bottom-right pointer-events-auto w-full md:w-80 max-h-[min(70vh,34rem)] custom-scrollbar ${
+            showDropdown && isExpanded ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden'
+          } ${
             isExpanded
               ? 'opacity-100 scale-100 translate-y-0 visible mb-3 rounded-[28px] p-4 md:p-5'
               : 'opacity-0 scale-95 translate-y-6 invisible pointer-events-none absolute bottom-16 right-3 md:right-0 w-[min(100%,20rem)] h-0 p-0 overflow-hidden border-0'
@@ -367,7 +374,7 @@ const MusicPlayer = () => {
             </div>
           </div>
 
-          <div className="relative mb-3 md:mb-4 z-10">
+          <div className="relative mb-3 md:mb-4 z-30">
             <button
               type="button"
               onClick={() => setShowDropdown(!showDropdown)}
@@ -378,7 +385,7 @@ const MusicPlayer = () => {
             </button>
 
             {showDropdown && isExpanded && (
-              <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] rounded-2xl shadow-xl max-h-40 overflow-y-auto z-30 py-1 custom-scrollbar">
+              <div className="absolute top-full mt-2 left-0 right-0 bg-white border border-[color-mix(in_srgb,var(--om-primary-soft)_40%,transparent)] rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-[50] py-1 custom-scrollbar">
                 {playlist.map((song) => (
                   <div
                     key={song.id}
@@ -418,7 +425,7 @@ const MusicPlayer = () => {
             )}
           </div>
 
-          <div className="space-y-2 pt-3 border-t border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)] relative z-10">
+          <div className={`space-y-2 pt-3 border-t border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)] relative ${showDropdown ? 'z-0' : 'z-10'}`}>
             <input
               type="text"
               value={songTitle}
