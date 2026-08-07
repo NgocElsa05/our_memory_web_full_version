@@ -1,14 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-function json(res, status, body) {
+function json(res, status, body, cacheable = false) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader(
+    'Cache-Control',
+    cacheable
+      ? 'public, s-maxage=120, max-age=60, stale-while-revalidate=600'
+      : 'no-store'
+  );
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.end(JSON.stringify(body));
 }
 
-function cloudinaryAvatar(url, size = 256) {
+function cloudinaryAvatar(url, size = 160) {
   if (!url || typeof url !== 'string') return url || '';
   if (!url.includes('res.cloudinary.com')) return url;
   const marker = '/image/upload/';
@@ -65,18 +70,23 @@ export default async function handler(req, res) {
     return json(res, 404, data || { ok: false, error: 'not_found' });
   }
 
-  return json(res, 200, {
-    ok: true,
-    spaceName: data.spaceName || 'Our Memory',
-    togetherSince: data.togetherSince || null,
-    days: data.days ?? 0,
-    user1: {
-      nickname: data.user1?.nickname || 'User 1',
-      avatarUrl: cloudinaryAvatar(data.user1?.avatarUrl || '', 256),
+  return json(
+    res,
+    200,
+    {
+      ok: true,
+      spaceName: data.spaceName || 'Our Memory',
+      togetherSince: data.togetherSince || null,
+      days: data.days ?? 0,
+      user1: {
+        nickname: data.user1?.nickname || 'User 1',
+        avatarUrl: cloudinaryAvatar(data.user1?.avatarUrl || '', 160),
+      },
+      user2: {
+        nickname: data.user2?.nickname || 'User 2',
+        avatarUrl: cloudinaryAvatar(data.user2?.avatarUrl || '', 160),
+      },
     },
-    user2: {
-      nickname: data.user2?.nickname || 'User 2',
-      avatarUrl: cloudinaryAvatar(data.user2?.avatarUrl || '', 256),
-    },
-  });
+    true
+  );
 }

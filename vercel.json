@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/w/:code",
-      "destination": "/w.html?code=:code"
+      "destination": "/api/widget-page?code=:code"
     },
     {
       "source": "/((?!api/|version\\.json$|sw\\.js$|w\\.html$|assets/).*)",
