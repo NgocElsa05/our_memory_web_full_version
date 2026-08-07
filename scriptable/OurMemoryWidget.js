@@ -26,7 +26,7 @@ function layoutForFamily(family) {
       label: 11,
       name: 11,
       letter: 22,
-      midW: 64,
+      midW: 72,
       present: "small",
     };
   }
@@ -41,7 +41,7 @@ function layoutForFamily(family) {
       label: 15,
       name: 14,
       letter: 40,
-      midW: 120,
+      midW: 130,
       present: "large",
     };
   }
@@ -56,7 +56,7 @@ function layoutForFamily(family) {
     label: 13,
     name: 12,
     letter: 34,
-    midW: 88,
+    midW: 100,
     present: "medium",
   };
 }
@@ -85,6 +85,23 @@ function addSoftShadow(text) {
   text.shadowColor = new Color("#000000", 0.6);
   text.shadowRadius = 3;
   text.shadowOffset = new Point(0, 1);
+}
+
+/** Một dòng chữ canh giữa theo chiều ngang (Scriptable không tin centerAlignText một mình) */
+function addCenteredLine(parent, str, font, color, width, height) {
+  const line = parent.addStack();
+  line.layoutHorizontally();
+  line.centerAlignContent();
+  line.size = new Size(width, height);
+  line.addSpacer();
+  const t = line.addText(str);
+  t.font = font;
+  t.textColor = color;
+  t.centerAlignText();
+  t.lineLimit = 1;
+  addSoftShadow(t);
+  line.addSpacer();
+  return t;
 }
 
 /** Avatar tròn + viền trắng; tên canh giữa dưới ảnh */
@@ -124,20 +141,14 @@ function addPersonColumn(parent, img, nickname, L) {
   }
 
   col.addSpacer(6);
-
-  // Tên: stack ngang + spacer hai bên → luôn giữa dưới avatar
-  const nameRow = col.addStack();
-  nameRow.layoutHorizontally();
-  nameRow.centerAlignContent();
-  nameRow.size = new Size(colW, L.name + 6);
-  nameRow.addSpacer();
-  const name = nameRow.addText(String(nickname || "").split(/\s+/)[0] || "");
-  name.font = Font.boldSystemFont(L.name);
-  name.textColor = WHITE;
-  name.lineLimit = 1;
-  name.centerAlignText();
-  addSoftShadow(name);
-  nameRow.addSpacer();
+  addCenteredLine(
+    col,
+    String(nickname || "").split(/\s+/)[0] || "",
+    Font.boldSystemFont(L.name),
+    WHITE,
+    colW,
+    L.name + 6
+  );
 }
 
 function emptyWidget(message, isError, L) {
@@ -165,7 +176,10 @@ async function createWidget(data, L) {
   const img1 = await loadAvatar(data.user1?.avatarUrl);
   const img2 = await loadAvatar(data.user2?.avatarUrl);
 
-  // space-between: avatar trái | spacer linh hoạt | tim+ngày | spacer | avatar phải
+  const outer = L.avatar + L.border * 2;
+  const colH = outer + L.name + 14;
+
+  // space-between: avatar trái | spacer | tim+ngày (canh giữa) | spacer | avatar phải
   addPersonColumn(row, img1, data.user1?.nickname, L);
 
   row.addSpacer();
@@ -173,28 +187,21 @@ async function createWidget(data, L) {
   const mid = row.addStack();
   mid.layoutVertically();
   mid.centerAlignContent();
-  mid.size = new Size(L.midW, L.avatar + L.border * 2 + L.name + 8);
+  mid.size = new Size(L.midW, colH);
 
   mid.addSpacer();
-  const heart = mid.addText("❤");
-  heart.font = Font.systemFont(L.heart);
-  heart.textColor = HEART;
-  heart.centerAlignText();
-  addSoftShadow(heart);
-
+  addCenteredLine(mid, "❤", Font.systemFont(L.heart), HEART, L.midW, L.heart + 4);
   mid.addSpacer(2);
-  const days = mid.addText(String(data.days ?? 0));
-  days.font = Font.blackRoundedSystemFont(L.days);
-  days.textColor = WHITE;
-  days.centerAlignText();
-  days.minimumScaleFactor = 0.6;
-  addSoftShadow(days);
-
-  const label = mid.addText("ngày");
-  label.font = Font.boldSystemFont(L.label);
-  label.textColor = WHITE;
-  label.centerAlignText();
-  addSoftShadow(label);
+  const days = addCenteredLine(
+    mid,
+    String(data.days ?? 0),
+    Font.blackRoundedSystemFont(L.days),
+    WHITE,
+    L.midW,
+    L.days + 4
+  );
+  days.minimumScaleFactor = 0.55;
+  addCenteredLine(mid, "ngày", Font.boldSystemFont(L.label), WHITE, L.midW, L.label + 4);
   mid.addSpacer();
 
   row.addSpacer();
