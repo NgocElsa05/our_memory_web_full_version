@@ -1,6 +1,7 @@
 # Widget iPhone bằng Scriptable (không cần Mac)
 
-> **Android?** Dùng KWGT: [KWGT_WIDGET.md](./KWGT_WIDGET.md) — cùng API `/api/widget`.
+> **Android?** Cách dễ (giống Scriptable — chỉ dán URL): [ANDROID_WIDGET.md](./ANDROID_WIDGET.md).  
+> KWGT chỉnh tay (không bắt buộc): [KWGT_WIDGET.md](./KWGT_WIDGET.md).
 
 Hiển thị: **avatar user_1 | số ngày | avatar user_2**.
 

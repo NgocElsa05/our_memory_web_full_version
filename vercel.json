@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/((?!api/|version\\.json$|sw\\.js$|assets/).*)",
+      "source": "/w/:code",
+      "destination": "/w.html?code=:code"
+    },
+    {
+      "source": "/((?!api/|version\\.json$|sw\\.js$|w\\.html$|assets/).*)",
       "destination": "/index.html"
     }
   ],

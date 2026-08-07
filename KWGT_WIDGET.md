@@ -1,157 +1,178 @@
-# Widget Android bằng KWGT (cùng API Our Memory)
+# KWGT Android widget (advanced / optional)
 
-Hiển thị: **avatar 1 | số ngày | avatar 2** — cùng data với Scriptable iOS.
+> **Want it easy like Scriptable?** Use the URL widget instead — 1 link, no layer editing:  
+> **[ANDROID_WIDGET.md](./ANDROID_WIDGET.md)** → `https://our--memory.vercel.app/w/YOUR_CODE`
 
-API: `https://our--memory.vercel.app/api/widget?code=MÃ_MỜI`
+KWGT has **no JavaScript runtime**. You cannot paste one script that builds the whole widget. This file is only if you still want a native KWGT layout.
 
-> Trước tiên vẫn cần chạy SQL [`scripts/sql_widget_by_invite.sql`](scripts/sql_widget_by_invite.sql) trên Supabase (nếu chưa chạy).
+API: `https://our--memory.vercel.app/api/widget?code=YOUR_CODE`
+
+> Run [`scripts/sql_widget_by_invite.sql`](scripts/sql_widget_by_invite.sql) on Supabase first (if you haven’t).
+
+**Tip:** Labels below match the **English UI** in KWGT. Tap the formula field → switch to **Formula** (ƒx) when you see a lock / plain text toggle.
 
 ---
 
-## 0. Chuẩn bị
+## 0. Prep
 
-1. Play Store → cài **KWGT** (Kustom Widget Maker)  
-2. Nên cài thêm **KWGT Pro** (mở khóa lưu / công thức đầy đủ — bản free hay bị khóa)  
-3. Lấy **mã mời** trong app Our Memory: Cài đặt → link `/invite/XXXX` → lấy `XXXX`  
-4. Thử trên Chrome điện thoại:
+1. Play Store → install **KWGT** (Kustom Widget Maker)  
+2. Also install **KWGT Pro** if free version locks **Save** / formulas  
+3. In Our Memory: get invite code from `/invite/XXXX` → use `XXXX`  
+4. Open in Chrome to test:
    ```text
    https://our--memory.vercel.app/api/widget?code=XXXX
    ```
-   Phải thấy JSON có `"ok":true`, `"days"`, `"user1"`, `"user2"`.
+   You should see `"ok":true`, `"days"`, `"user1"`, `"user2"`.
+
+Replace every `XXXX` below with your real code.
 
 ---
 
-## 1. Thêm widget trống lên màn hình
+## 1. Put an empty KWGT on the home screen
 
-1. Giữ Home Screen → **Widgets** → kéo **KWGT** (ô 2×2 hoặc tương đương Small) ra màn hình  
-2. Chạm widget → **KWGT** mở editor (hoặc “Create new”)
-
----
-
-## 2. Tạo layer nền
-
-1. Trong editor → **Items** → **+** → **Shape**  
-2. Shape = Rectangle, bo góc (~24–32)  
-3. Paint → màu nền mềm, ví dụ `#F8F5FA`  
-4. Size: khớp widget (hoặc `100%` / `100%`)
+1. Long-press Home → **Widgets**  
+2. Find **KWGT** → drag a size (e.g. **2×2**) onto the home screen  
+3. Tap the empty widget → opens KWGT → **Create** / pick a blank preset → opens the **Editor**
 
 ---
 
-## 3. Công thức lấy data (Globals — tiện sửa 1 chỗ)
+## 2. Background
 
-**Items → + → Globals** (hoặc Layer → Globals):
+1. Bottom bar: **Items** → **+** (Add) → **Shape**  
+2. Open the Shape item → tab **Layer**  
+   - **Shape** → **Rectangle**  
+3. Tab **Paint**  
+   - **Color** → e.g. `#F8F5FA`  
+4. Tab **Position** / size  
+   - Width / Height → `100%` (or fill the widget)  
+5. Tab **Layer** again (optional)  
+   - **Corner Radius** → `24`–`32`
 
-| Tên biến | Formula / Value |
-|----------|-----------------|
-| `code` | `XXXX` (mã mời, viết hoa cũng được) |
-| `api` | `https://our--memory.vercel.app/api/widget?code=$gv(code)$` |
-| `raw` | `$wg(gv(api), json)$` |
-| `days` | `$tc(json, gv(raw), days)$` |
-| `a1` | `$tc(json, gv(raw), user1.avatarUrl)$` |
-| `a2` | `$tc(json, gv(raw), user2.avatarUrl)$` |
-| `n1` | `$tc(json, gv(raw), user1.nickname)$` |
-| `n2` | `$tc(json, gv(raw), user2.nickname)$` |
+---
 
-Nếu editor không có Globals riêng: gắn thẳng formula vào từng layer (thay `gv(...)` bằng chuỗi/`wg` trực tiếp).
+## 3. Best formulas (copy-paste)
 
-**Lưu ý cú pháp KWGT** (tùy bản):
+KWGT can parse JSON in one step with **`wg`**:
 
-- Web JSON: `$wg("URL", json)$`  
-- Đọc field: `$tc(json, wg("URL", json), days)$`  
+| What | Formula |
+|------|---------|
+| Days | `$wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .days)$` |
+| Avatar 1 URL | `$wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .user1.avatarUrl)$` |
+| Avatar 2 URL | `$wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .user2.avatarUrl)$` |
+| Nickname 1 | `$wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .user1.nickname)$` |
+| Nickname 2 | `$wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .user2.nickname)$` |
 
-Ví dụ số ngày **không dùng Globals**:
+Tap the value field → choose **Formula** (not plain text) → paste.
+
+---
+
+## 4. Layout: left avatar | days | right avatar
+
+### A) Left avatar (user 1)
+
+1. **Items** → **+** → **Image**  
+2. Open that **Image** → tab **Bitmap** (or property **Bitmap**)  
+3. Tap **Bitmap** → switch mode to **Formula** → paste:
+   ```text
+   $wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .user1.avatarUrl)$
+   ```
+4. Still on **Image**:
+   - **Layer** → **Mask** / shape → **Circle** (or high **Corner Radius**)  
+   - Size ≈ `52` × `52`  
+   - Place on the **left**
+5. (Optional) **Items** → **+** → **Text** under the avatar  
+   - Tab **Text** → **Content** → **Formula**:
+     ```text
+     $wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .user1.nickname)$
+     ```
+   - **Paint** → smaller font, center align
+
+### B) Center — days
+
+1. **Items** → **+** → **Text**  
+2. Tab **Text** → **Content** → **Formula**:
+   ```text
+   $wg("https://our--memory.vercel.app/api/widget?code=XXXX", json, .days)$
+   ```
+3. **Paint** → bold, large (~`26`–`32`)  
+4. Another **Text** under it with fixed content: `days` (plain text, not Formula)
+
+### C) Right avatar (user 2)
+
+Same as left, but formulas use:
 
 ```text
-$tc(json, wg("https://our--memory.vercel.app/api/widget?code=XXXX", json), days)$
-```
-
-Avatar 1:
-
-```text
-$tc(json, wg("https://our--memory.vercel.app/api/widget?code=XXXX", json), user1.avatarUrl)$
-```
-
----
-
-## 4. Layout 3 cột
-
-**Items → + → Stack / Overlap** hoặc đặt 3 layer cạnh nhau:
-
-### Trái — Avatar user 1
-1. **+ → Bitmap** (hoặc Image)  
-2. FX / Bitmap → **Bitmap URL** (hoặc formula):
-   ```text
-   $tc(json, wg("https://our--memory.vercel.app/api/widget?code=XXXX", json), user1.avatarUrl)$
-   ```
-3. Shape mask: **Circle** (hoặc Corner radius 50%)  
-4. Size ~ `52dp` × `52dp`  
-5. Bên dưới (optional): **Text** nickname  
-   ```text
-   $tc(json, wg("https://our--memory.vercel.app/api/widget?code=XXXX", json), user1.nickname)$
-   ```
-   Font nhỏ, căn giữa
-
-### Giữa — Số ngày
-1. **+ → Text**  
-2. Content:
-   ```text
-   $tc(json, wg("https://our--memory.vercel.app/api/widget?code=XXXX", json), days)$
-   ```
-3. Font đậm, size lớn (~26–32)  
-4. Thêm Text thứ hai: chữ `ngày` (cố định), size nhỏ, màu xám
-
-### Phải — Avatar user 2
-Giống trái, đổi path thành `user2.avatarUrl` / `user2.nickname`.
-
----
-
-## 5. Chạm widget mở app web
-
-Root layer / Stack → **Touch** → **Open URL**:
-
-```text
-https://our--memory.vercel.app/
+.user2.avatarUrl
+.user2.nickname
 ```
 
 ---
 
-## 6. Lưu & gắn
+## 5. Optional: Globals (edit code in one place)
 
-1. **Save** preset (đặt tên `Our Memory`)  
-2. Về Home → chạm widget KWGT đang trống → chọn preset vừa lưu  
-3. Nếu avatar chưa hiện: đợi vài giây (KWGT cache mạng), hoặc trong editor bấm refresh / tạm tắt–bật Wi‑Fi
+On the **root** item (top of the layer tree):
 
----
+1. Open **Root** → tab **Globals**  
+2. **+** → type **Text** → name e.g. `code` → value `XXXX`  
+3. Then formulas become:
 
-## 7. Cập nhật thường xuyên
+```text
+$wg("https://our--memory.vercel.app/api/widget?code=" + gv(code), json, .days)$
+```
 
-KWGT Settings (trong app) → cập nhật widget / background update:
-
-- Cho phép chạy nền (tùy máy Xiaomi/OPPO/Vivo hay bị kill — xem [dontkillmyapp.com](https://dontkillmyapp.com))  
-- Interval hợp lý: 30–60 phút  
-
-Đổi ngày yêu / avatar trong Our Memory → widget sẽ lấy số mới ở lần `wg` tiếp theo.
+(If `+` concat fails on your build, keep the full URL with `XXXX` hard-coded — simpler.)
 
 ---
 
-## Lỗi thường gặp
+## 6. Tap widget → open Our Memory
 
-| Hiện tượng | Cách xử lý |
-|------------|------------|
-| Text trống / `$tc...$` hiện nguyên | Sai cú pháp hoặc thiếu KWGT Pro; thử formula mẫu từng field |
-| `not_found` trong JSON | Sai mã mời |
-| Function SQL thiếu | Chưa chạy `sql_widget_by_invite.sql` |
-| Avatar không load | URL rỗng (chưa có ảnh hồ sơ) hoặc máy chặn HTTP ảnh — kiểm tra JSON `avatarUrl` |
-| Widget không tự cập nhật | Bật unrestricted battery cho KWGT |
+1. Select **Root** (or the background **Shape**)  
+2. Tab **Touch**  
+3. **+** → **Touch action** → **Open URL**  
+4. URL:
+   ```text
+   https://our--memory.vercel.app/
+   ```
+
+---
+
+## 7. Save & assign
+
+1. Top of Editor → **Save** / floppy icon → name preset `Our Memory`  
+2. Back to Home → tap the empty KWGT widget → pick **Our Memory**  
+3. If avatars blank: wait a few seconds, or in Editor use refresh / **Touch** → **Kustom Action** → **Force RSS/Text/Web Update**
+
+---
+
+## 8. Auto refresh
+
+In the **KWGT** app:
+
+1. Open **Settings** (gear)  
+2. Check **Update** / background refresh options  
+3. On phone **Settings** → **Apps** → **KWGT** → **Battery** → **Unrestricted** (Xiaomi / Oppo / Vivo often kill background apps — see [dontkillmyapp.com](https://dontkillmyapp.com))
+
+Reasonable interval: every 30–60 minutes.
+
+---
+
+## Common issues
+
+| Symptom | Fix |
+|---------|-----|
+| Formula shows as raw `$wg...$` | Field is still **Text**, not **Formula** (ƒx) |
+| Empty / locked Save | Need **KWGT Pro** |
+| JSON `not_found` | Wrong invite code |
+| SQL / function error | Run `sql_widget_by_invite.sql` on Supabase |
+| No avatar | `avatarUrl` empty in JSON — set profile photo in app |
+| Never updates | Battery unrestricted + Force Web Update once |
 
 ---
 
 ## iOS vs Android
 
-| | iOS | Android |
-|--|-----|---------|
-| App | **Scriptable** | **KWGT** |
-| Script/preset | [`scriptable/OurMemoryWidget.js`](scriptable/OurMemoryWidget.js) | Làm trong editor (hướng dẫn này) |
-| API | Giống nhau `/api/widget?code=` | Giống nhau |
-
-Hướng dẫn iOS: [SCRIPTABLE_WIDGET.md](./SCRIPTABLE_WIDGET.md)
+| | iOS | Android easy | Android KWGT |
+|--|-----|--------------|--------------|
+| App | **Scriptable** | **Web Widget** + URL | **KWGT** |
+| Setup | [SCRIPTABLE_WIDGET.md](./SCRIPTABLE_WIDGET.md) | [ANDROID_WIDGET.md](./ANDROID_WIDGET.md) | This guide |
+| API | `/api/widget?code=` | same | same |
