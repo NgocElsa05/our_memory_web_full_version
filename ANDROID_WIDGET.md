@@ -48,6 +48,8 @@ Open the URL once in Chrome first to confirm it shows avatars + days. Then the h
 
 Tap the widget → opens Our Memory (link on the page).
 
+**Transparent background:** the page itself is transparent. In **WebsiteWidget**, also turn on any **Transparent** / clear background option (and hide the refresh chrome if you can) so the wallpaper shows through.
+
 ---
 
 ## Refresh

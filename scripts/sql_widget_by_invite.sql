@@ -40,8 +40,9 @@ begin
     select * into v_p2 from public.profiles where id = v_m2.id limit 1;
   end if;
 
+  -- Đếm theo lịch Australia/Sydney, không +1 (23/4 → 7/8 = 106)
   if v_space.together_since is not null then
-    v_days := (current_date - v_space.together_since) + 1;
+    v_days := ((timezone('Australia/Sydney', now()))::date - v_space.together_since);
     if v_days < 0 then v_days := 0; end if;
   else
     v_days := 0;

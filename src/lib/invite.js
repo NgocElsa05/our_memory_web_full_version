@@ -70,15 +70,38 @@ export function inviteUrl(inviteCode) {
   return `${origin}/invite/${inviteCode}`;
 }
 
+const DAYS_TZ = 'Australia/Sydney';
+
+/** Calendar YYYY-MM-DD in Australia/Sydney (avoids UTC day rollover). */
+function calendarDateInTz(date = new Date(), timeZone = DAYS_TZ) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const y = Number(parts.find((p) => p.type === 'year')?.value);
+  const m = Number(parts.find((p) => p.type === 'month')?.value);
+  const d = Number(parts.find((p) => p.type === 'day')?.value);
+  if (!y || !m || !d) return null;
+  return { y, m, d };
+}
+
+/**
+ * Số ngày yêu nhau theo lịch Úc (Australia/Sydney).
+ * Đếm khoảng cách lịch: 23/4 → 7/8 = 106 (không +1 ngày đầu).
+ */
 export function daysTogether(togetherSince) {
   if (!togetherSince) return null;
-  const start = new Date(`${togetherSince}T00:00:00`);
-  if (Number.isNaN(start.getTime())) return null;
-  const today = new Date();
-  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const diff = Math.floor((todayDay - startDay) / (1000 * 60 * 60 * 24));
-  return diff >= 0 ? diff + 1 : null; // tính cả ngày đầu
+  const raw = String(togetherSince).slice(0, 10);
+  const [sy, sm, sd] = raw.split('-').map(Number);
+  if (!sy || !sm || !sd) return null;
+  const today = calendarDateInTz(new Date(), DAYS_TZ);
+  if (!today) return null;
+  const startUtc = Date.UTC(sy, sm - 1, sd);
+  const todayUtc = Date.UTC(today.y, today.m - 1, today.d);
+  const diff = Math.floor((todayUtc - startUtc) / (1000 * 60 * 60 * 24));
+  return diff >= 0 ? diff : null;
 }
 
 export function formatViDate(isoDate) {

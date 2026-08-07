@@ -43,14 +43,34 @@ function parseBirthday(raw) {
   return null;
 }
 
+const DAYS_TZ = 'Australia/Sydney';
+
+function calendarDateInTz(date = new Date(), timeZone = DAYS_TZ) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const y = Number(parts.find((p) => p.type === 'year')?.value);
+  const m = Number(parts.find((p) => p.type === 'month')?.value);
+  const d = Number(parts.find((p) => p.type === 'day')?.value);
+  if (!y || !m || !d) return null;
+  return { y, m, d };
+}
+
+/** Khoảng cách lịch Úc — không +1 (khớp Home / widget). */
 function daysTogether(togetherSince, now = new Date()) {
   if (!togetherSince) return null;
-  const start = new Date(`${togetherSince}T00:00:00`);
-  if (Number.isNaN(start.getTime())) return null;
-  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diff = Math.floor((todayDay - startDay) / (1000 * 60 * 60 * 24));
-  return diff >= 0 ? diff + 1 : null;
+  const raw = String(togetherSince).slice(0, 10);
+  const [sy, sm, sd] = raw.split('-').map(Number);
+  if (!sy || !sm || !sd) return null;
+  const today = calendarDateInTz(now, DAYS_TZ);
+  if (!today) return null;
+  const startUtc = Date.UTC(sy, sm - 1, sd);
+  const todayUtc = Date.UTC(today.y, today.m - 1, today.d);
+  const diff = Math.floor((todayUtc - startUtc) / (1000 * 60 * 60 * 24));
+  return diff >= 0 ? diff : null;
 }
 
 function isDayMilestone(days) {
