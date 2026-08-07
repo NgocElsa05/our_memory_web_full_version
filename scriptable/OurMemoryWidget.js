@@ -1,4 +1,4 @@
-// Our Memory — Scriptable widget (2 avatar + số ngày giữa)
+// Our Memory — Scriptable widget (2 avatar + ❤ + số ngày, nền trong suốt)
 // 1) Đổi INVITE_CODE thành mã mời Space (Cài đặt → link mời, lấy đoạn sau /invite/)
 // 2) Scriptable → + → dán file này → Done → đặt tên "Our Memory"
 // 3) Bấm ▶ chạy thử
@@ -7,9 +7,10 @@
 const INVITE_CODE = "PASTE_INVITE_CODE_HERE";
 const API_BASE = "https://our--memory.vercel.app";
 
-const WIDGET_BG = new Color("#f8f5fa");
 const ACCENT = new Color("#7ca1d9");
-const MUTED = new Color("#8a8790");
+const HEART = new Color("#e85a7a");
+const MUTED = new Color("#6b6570");
+const INK = new Color("#1a1a1a");
 
 async function fetchSnapshot(code) {
   const url = `${API_BASE}/api/widget?code=${encodeURIComponent(code)}`;
@@ -31,6 +32,12 @@ async function loadAvatar(url) {
   }
 }
 
+function addSoftShadow(text) {
+  text.shadowColor = new Color("#ffffff", 0.85);
+  text.shadowRadius = 2;
+  text.shadowOffset = new Point(0, 0.5);
+}
+
 function addPersonColumn(parent, img, nickname) {
   const col = parent.addStack();
   col.layoutVertically();
@@ -45,7 +52,7 @@ function addPersonColumn(parent, img, nickname) {
     const circle = col.addStack();
     circle.size = new Size(52, 52);
     circle.cornerRadius = 26;
-    circle.backgroundColor = new Color("#e4e0ef");
+    circle.backgroundColor = new Color("#e4e0ef", 0.92);
     circle.centerAlignContent();
     const letter = circle.addText(String(nickname || "?").trim().charAt(0).toUpperCase() || "?");
     letter.font = Font.blackSystemFont(18);
@@ -58,11 +65,23 @@ function addPersonColumn(parent, img, nickname) {
   name.textColor = MUTED;
   name.lineLimit = 1;
   name.centerAlignText();
+  addSoftShadow(name);
+}
+
+function emptyWidget(message, isError) {
+  const w = new ListWidget();
+  w.backgroundColor = Color.clear();
+  w.setPadding(12, 10, 12, 10);
+  const t = w.addText(message);
+  t.font = Font.boldSystemFont(12);
+  t.textColor = isError ? Color.red() : INK;
+  addSoftShadow(t);
+  return w;
 }
 
 async function createWidget(data) {
   const w = new ListWidget();
-  w.backgroundColor = WIDGET_BG;
+  w.backgroundColor = Color.clear();
   w.setPadding(12, 10, 12, 10);
   w.url = `${API_BASE}/`;
 
@@ -79,14 +98,25 @@ async function createWidget(data) {
   const mid = row.addStack();
   mid.layoutVertically();
   mid.centerAlignContent();
+
+  const heart = mid.addText("❤");
+  heart.font = Font.systemFont(14);
+  heart.textColor = HEART;
+  heart.centerAlignText();
+  addSoftShadow(heart);
+
+  mid.addSpacer(2);
   const days = mid.addText(String(data.days ?? 0));
-  days.font = Font.blackRoundedSystemFont(26);
-  days.textColor = Color.black();
+  days.font = Font.blackRoundedSystemFont(24);
+  days.textColor = INK;
   days.centerAlignText();
+  addSoftShadow(days);
+
   const label = mid.addText("ngày");
   label.font = Font.boldSystemFont(10);
   label.textColor = MUTED;
   label.centerAlignText();
+  addSoftShadow(label);
 
   row.addSpacer();
   addPersonColumn(row, img2, data.user2?.nickname);
@@ -98,10 +128,7 @@ async function createWidget(data) {
 async function main() {
   const code = String(INVITE_CODE || "").trim().toUpperCase();
   if (!code || code === "PASTE_INVITE_CODE_HERE") {
-    const w = new ListWidget();
-    w.backgroundColor = WIDGET_BG;
-    const t = w.addText("Sửa INVITE_CODE trong script");
-    t.font = Font.boldSystemFont(12);
+    const w = emptyWidget("Sửa INVITE_CODE trong script", false);
     if (config.runsInWidget) Script.setWidget(w);
     else await w.presentSmall();
     Script.complete();
@@ -114,14 +141,7 @@ async function main() {
     if (config.runsInWidget) Script.setWidget(w);
     else await w.presentSmall();
   } catch (e) {
-    const w = new ListWidget();
-    w.backgroundColor = WIDGET_BG;
-    const t = w.addText("Our Memory");
-    t.font = Font.boldSystemFont(12);
-    w.addSpacer(6);
-    const err = w.addText(String(e.message || e));
-    err.font = Font.systemFont(11);
-    err.textColor = Color.red();
+    const w = emptyWidget(String(e.message || e), true);
     if (config.runsInWidget) Script.setWidget(w);
     else await w.presentSmall();
   }
