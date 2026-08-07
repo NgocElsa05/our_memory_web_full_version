@@ -23,16 +23,12 @@ dist-ssr
 *credentials*.json
 !.env.example
 
-# Internal docs — keep out of remote (README stays tracked)
+# Internal docs — local only, never push (README at repo root stays tracked)
+docs/
 *.md
 !README.md
-!LOADING_ANIMATIONS.md
-!IOS_WIDGET.md
-!SCRIPTABLE_WIDGET.md
-!KWGT_WIDGET.md
-!ANDROID_WIDGET.md
 
-# Capacitor / Xcode build artifacts (ios/ project itself is generated on Mac — see IOS_WIDGET.md)
+# Capacitor / Xcode build artifacts (ios/ project itself is generated on Mac — see docs/IOS_WIDGET.md)
 android/
 .capacitor/
 **/xcuserdata/

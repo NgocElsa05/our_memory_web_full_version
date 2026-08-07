@@ -14,7 +14,7 @@
 | **react-calendar** | Lịch trong Kỷ niệm |
 | **lucide-react** | Icon |
 
-**Tài liệu bổ sung:** [SUPABASE_SCHEMA_FOR_REVIEW.md](./SUPABASE_SCHEMA_FOR_REVIEW.md) — template dán schema Supabase để đối chiếu với frontend.
+**Tài liệu bổ sung (local, không đẩy GitHub):** `docs/SUPABASE_SCHEMA_FOR_REVIEW.md` — template dán schema Supabase để đối chiếu với frontend. Các hướng dẫn khác cũng nằm trong thư mục `docs/`.
 
 ## Cài đặt và chạy local
 
@@ -47,7 +47,7 @@ Tạo file `.env.local` (đã được `.gitignore` bỏ qua) với các biến 
 
 Bảng dưới đây **được sinh tự động** từ `supabase.from('…')` và `supabase.storage…from('…')` trong `src/`. Sau khi đổi query ở pages hoặc components, chạy **`npm run readme:sync`** rồi commit README.
 
-Mô tả cột, luồng UX và ý nghĩa từng trang vẫn nằm ở mục **Chi tiết từng trang** — cần **cập nhật tay** khi bạn đổi hành vi hoặc schema nghiệp vụ (README không đoán được phần đó). Đối chiếu với Postgres/RLS: **[SUPABASE_SCHEMA_FOR_REVIEW.md](./SUPABASE_SCHEMA_FOR_REVIEW.md)**.
+Mô tả cột, luồng UX và ý nghĩa từng trang vẫn nằm ở mục **Chi tiết từng trang** — cần **cập nhật tay** khi bạn đổi hành vi hoặc schema nghiệp vụ (README không đoán được phần đó). Đối chiếu với Postgres/RLS: `docs/SUPABASE_SCHEMA_FOR_REVIEW.md` (local only).
 
 <!-- README_SYNC:SUPABASE_START -->
 

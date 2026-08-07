@@ -1,4 +1,4 @@
-/** Theme palettes — map theme_key → 6 màu (xem AUTH_USER_FLOW.md) */
+/** Theme palettes — map theme_key → 6 màu (xem docs/AUTH_USER_FLOW.md) */
 export const THEME_PALETTES = [
   {
     key: 'neapolitan',

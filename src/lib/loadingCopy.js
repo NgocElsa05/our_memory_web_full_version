@@ -1,4 +1,4 @@
-/** Copy loading / thông báo — khớp LOADING_ANIMATIONS.md */
+/** Copy loading / thông báo — khớp docs/LOADING_ANIMATIONS.md */
 
 export const LOADING_COPY = {
   // Full-screen

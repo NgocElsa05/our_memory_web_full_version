@@ -2,7 +2,7 @@ import { Mail, Mailbox } from 'lucide-react';
 import { LOADING_COPY } from '../lib/loadingCopy';
 
 /**
- * CuteLoader — loading / feedback theo LOADING_ANIMATIONS.md
+ * CuteLoader — loading / feedback theo docs/LOADING_ANIMATIONS.md
  * variant: 'fullscreen' | 'inline' | 'overlay' | 'toast'
  * motion: 'none' | 'letter' | 'fluff' | 'cards'  (fluff = alias cards)
  */
