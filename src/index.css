@@ -54,6 +54,23 @@
     background-color: var(--om-tint);
     color: var(--om-on-field);
   }
+
+  /* iOS Safari: type=date không có dropdown kiểu Android — bánh xe hệ thống; tránh tràn khung */
+  input[type='date'].om-field,
+  input[type='date'] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    font-size: 16px; /* ≥16px tránh zoom + layout lệch trên iPhone */
+  }
+  input[type='date']::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.25em;
+  }
 }
 
 /* CuteLoader motions */

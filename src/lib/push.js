@@ -23,7 +23,7 @@ export async function registerPushServiceWorker() {
   return navigator.serviceWorker.register('/sw.js');
 }
 
-export async function enablePushNotifications({ memberId, spaceId }) {
+export async function enablePushNotifications({ memberId, spaceId, forceResubscribe = true }) {
   if (!isPushSupported()) throw new Error('Thiết bị / trình duyệt này không hỗ trợ Web Push.');
   if (!memberId || !spaceId) throw new Error('Thiếu member / space.');
 
@@ -31,12 +31,25 @@ export async function enablePushNotifications({ memberId, spaceId }) {
   if (!publicKey) throw new Error('Thiếu VITE_VAPID_PUBLIC_KEY trong env.');
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Bạn chưa cho phép thông báo.');
+  if (permission !== 'granted') {
+    throw new Error(
+      'Chưa cho phép thông báo cho Our Memory / Chrome. Vào Cài đặt điện thoại → Ứng dụng → Chrome (hoặc Our Memory) → Thông báo → Cho phép, rồi bấm lại.'
+    );
+  }
 
   const reg = await registerPushServiceWorker();
   await navigator.serviceWorker.ready;
 
   let sub = await reg.pushManager.getSubscription();
+  // Endpoint cũ (đổi Chrome / xóa data) hay 410 — đăng ký lại cho chắc
+  if (forceResubscribe && sub) {
+    try {
+      await sub.unsubscribe();
+    } catch {
+      /* ignore */
+    }
+    sub = null;
+  }
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -63,6 +76,14 @@ export async function enablePushNotifications({ memberId, spaceId }) {
     { onConflict: 'endpoint' }
   );
   if (error) throw error;
+
+  // Xóa endpoint cũ của cùng member (tránh máy này còn subscription chết)
+  await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('member_id', memberId)
+    .neq('endpoint', endpoint);
+
   return true;
 }
 

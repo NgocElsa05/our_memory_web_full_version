@@ -35,8 +35,8 @@ export async function syncCoupleWidget(input) {
     days,
     avatar1Url: cloudinaryAvatar(input?.avatar1Url || '', 256) || '',
     avatar2Url: cloudinaryAvatar(input?.avatar2Url || '', 256) || '',
-    nickname1: (input?.nickname1 || '').trim() || 'User 1',
-    nickname2: (input?.nickname2 || '').trim() || 'User 2',
+    nickname1: (input?.nickname1 || '').trim() || 'Tình yêu 1',
+    nickname2: (input?.nickname2 || '').trim() || 'Tình yêu 2',
     spaceName: (input?.spaceName || '').trim() || 'Our Memory',
     updatedAt: new Date().toISOString(),
   };

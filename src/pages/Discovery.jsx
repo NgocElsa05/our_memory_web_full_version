@@ -115,14 +115,14 @@ const Discovery = () => {
     if (self) {
       tabs.push({
         id: self.id,
-        label: nickByMemberId[self.id] || (self.role === 'user_1' ? 'Thành viên 1' : 'Thành viên 2'),
+        label: nickByMemberId[self.id] || (self.role === 'user_1' ? 'Tình yêu 1' : 'Tình yêu 2'),
         pending: false,
       });
     }
     if (other) {
       tabs.push({
         id: other.id,
-        label: nickByMemberId[other.id] || (other.role === 'user_1' ? 'Thành viên 1' : 'Thành viên 2'),
+        label: nickByMemberId[other.id] || (other.role === 'user_1' ? 'Tình yêu 1' : 'Tình yêu 2'),
         pending: false,
       });
     } else {

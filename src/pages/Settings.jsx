@@ -132,8 +132,10 @@ export default function Settings() {
     setPushBusy(true);
     setPushMsg('');
     try {
-      await enablePushNotifications({ memberId: sessionUserId, spaceId });
-      setPushMsg(LOADING_COPY.IN_PUSH_OK);
+      await enablePushNotifications({ memberId: sessionUserId, spaceId, forceResubscribe: true });
+      setPushMsg(
+        `${LOADING_COPY.IN_PUSH_OK}\nMáy này đã đăng ký lại. Nhờ partner gửi thử 1 thư để kiểm tra.`
+      );
     } catch (e) {
       setPushMsg(e.message || LOADING_COPY.IN_PUSH_FAIL);
     } finally {
@@ -218,7 +220,7 @@ export default function Settings() {
       return;
     }
     if (role !== 'user_1') {
-      flashError('Chỉ người tạo Space (User 1) mới được xóa.');
+      flashError('Chỉ người tạo Space mới được xóa.');
       return;
     }
     const expected = (space?.name || '').trim();
@@ -255,7 +257,7 @@ export default function Settings() {
         </div>
         <h1 className="text-2xl font-black text-gray-800 tracking-tight">Cài đặt Space</h1>
         <p className="text-xs text-gray-400 font-bold mt-1 uppercase tracking-wider">
-          {role === 'user_1' ? 'User 1' : 'User 2'} · đổi theme & thông tin chung
+          đổi theme & thông tin chung
         </p>
       </header>
 
@@ -300,31 +302,40 @@ export default function Settings() {
         <h2 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--om-primary)' }}>
           <CalendarHeart size={14} /> Những ngày đặc biệt
         </h2>
-        <label className="block">
+        <label className="block min-w-0">
           <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2 block">
             Ngày bắt đầu yêu *
           </span>
-          <input
-            type="date"
-            required
-            value={togetherSince}
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setTogetherSince(e.target.value)}
-            className="om-field w-full rounded-2xl border-2 border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--om-primary)]"
-          />
+          <div className="min-w-0 w-full overflow-hidden rounded-2xl">
+            <input
+              type="date"
+              required
+              lang="vi"
+              value={togetherSince}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setTogetherSince(e.target.value)}
+              className="om-field block w-full max-w-full min-w-0 rounded-2xl border-2 border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] px-3 py-3 text-base font-semibold outline-none focus:border-[var(--om-primary)]"
+            />
+          </div>
+          <span className="mt-1.5 block text-[10px] text-gray-400 font-medium md:hidden">
+            Chạm ô ngày — iPhone mở bánh xe chọn ngày (không có dropdown như Android).
+          </span>
         </label>
-        <label className="block">
+        <label className="block min-w-0">
           <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2 block">
             Ngày quen nhau
           </span>
-          <input
-            type="date"
-            value={metOn}
-            disabled={skipMet}
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setMetOn(e.target.value)}
-            className="om-field w-full rounded-2xl border-2 border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--om-primary)] disabled:opacity-50"
-          />
+          <div className="min-w-0 w-full overflow-hidden rounded-2xl">
+            <input
+              type="date"
+              lang="vi"
+              value={metOn}
+              disabled={skipMet}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setMetOn(e.target.value)}
+              className="om-field block w-full max-w-full min-w-0 rounded-2xl border-2 border-[color-mix(in_srgb,var(--om-primary-soft)_30%,transparent)] px-3 py-3 text-base font-semibold outline-none focus:border-[var(--om-primary)] disabled:opacity-50"
+            />
+          </div>
         </label>
         <button
           type="button"
@@ -387,7 +398,8 @@ export default function Settings() {
           <Bell size={14} /> Thông báo
         </h2>
         <p className="text-sm text-gray-500 font-medium">
-          Bật để nhận thông báo khi có thư mới hoặc comment Discovery (cần chạy trên link Vercel / HTTPS, và cả hai cùng bật).
+          Bật trong app (nút bên dưới) để máy này nhận thư / ảnh / Discovery. Chỉ bật thông báo trong
+          Cài đặt điện thoại là chưa đủ — cần đăng ký lại từ Our Memory.
         </p>
         {!isPushSupported() && (
           <p className="text-xs font-semibold text-amber-700">
@@ -401,9 +413,13 @@ export default function Settings() {
           className="w-full rounded-2xl py-3 text-xs font-black uppercase tracking-widest text-[var(--om-on-primary)] disabled:opacity-50"
           style={{ background: 'var(--om-primary)' }}
         >
-          {pushBusy ? LOADING_COPY.IN_PUSH : 'Bật thông báo trên máy này'}
+          {pushBusy ? LOADING_COPY.IN_PUSH : 'Bật / đăng ký lại thông báo trên máy này'}
         </button>
-        {pushMsg && <p className="text-xs font-semibold text-gray-600">{pushMsg}</p>}
+        {pushMsg && <p className="text-xs font-semibold text-gray-600 whitespace-pre-wrap">{pushMsg}</p>}
+        <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
+          Android: mở Our Memory bằng Chrome (hoặc app đã cài từ Chrome), tắt tối ưu pin cho Chrome /
+          Our Memory. Nếu máy khác nhận được mà máy này không — bấm nút trên để đăng ký lại.
+        </p>
       </section>
 
       {/* Invite */}

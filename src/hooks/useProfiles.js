@@ -34,7 +34,7 @@ export function useProfileNicknames() {
       map[m.id] = friendlyNickname(
         m.id,
         fromQuery?.nickname || m.nickname,
-        nicknameOf?.(m.id) || (m.role === 'user_1' ? 'Thành viên 1' : 'Thành viên 2')
+        nicknameOf?.(m.id) || (m.role === 'user_1' ? 'Tình yêu 1' : 'Tình yêu 2')
       );
     });
     return map;
@@ -73,10 +73,10 @@ export function useProfileAvatars() {
         anh: p2?.avatar_url || '',
       },
       labels: {
-        user_1: friendlyNickname(m1?.id, p1?.nickname || m1?.nickname, 'Thành viên 1'),
-        user_2: friendlyNickname(m2?.id, p2?.nickname || m2?.nickname, 'Thành viên 2'),
-        em: friendlyNickname(m1?.id, p1?.nickname || m1?.nickname, 'Thành viên 1'),
-        anh: friendlyNickname(m2?.id, p2?.nickname || m2?.nickname, 'Thành viên 2'),
+        user_1: friendlyNickname(m1?.id, p1?.nickname || m1?.nickname, 'Tình yêu 1'),
+        user_2: friendlyNickname(m2?.id, p2?.nickname || m2?.nickname, 'Tình yêu 2'),
+        em: friendlyNickname(m1?.id, p1?.nickname || m1?.nickname, 'Tình yêu 1'),
+        anh: friendlyNickname(m2?.id, p2?.nickname || m2?.nickname, 'Tình yêu 2'),
       },
     };
   }, [members, q.data, nicknameOf]);

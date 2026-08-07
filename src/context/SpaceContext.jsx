@@ -222,8 +222,8 @@ export function SpaceProvider({ children }) {
       if (t) return t;
       const m = members.find((x) => x.id === memberId);
       if (m?.nickname?.trim()) return m.nickname.trim();
-      if (m?.role === 'user_1') return 'Thành viên 1';
-      if (m?.role === 'user_2') return 'Thành viên 2';
+      if (m?.role === 'user_1') return 'Tình yêu 1';
+      if (m?.role === 'user_2') return 'Tình yêu 2';
       return fallback;
     },
     [profilesById, members]

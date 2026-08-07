@@ -262,7 +262,7 @@ function AuthenticatedShell() {
                 className="text-[10px] font-black uppercase tracking-widest truncate"
                 style={{ color: 'var(--om-primary-soft)' }}
               >
-                {profile?.nickname || 'Bạn'} · {role === 'user_1' ? 'User 1' : 'User 2'}
+                {profile?.nickname || 'Bạn'}
               </p>
               <p className="text-[11px] font-bold text-gray-600 truncate mt-0.5">{theme.name}</p>
             </div>
