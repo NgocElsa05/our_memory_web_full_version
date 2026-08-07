@@ -261,6 +261,8 @@ const Mailbox = () => {
 
       <p className="text-center text-[10px] text-[var(--om-accent)] mt-10 font-black uppercase tracking-widest animate-pulse">
         {tabNames[sessionUserId] || 'Bạn'} thương {tabNames[partnerId] || 'người ấy'}
+        {', '}
+        {tabNames[partnerId] || 'Người ấy'} thương {tabNames[sessionUserId] || 'bạn'}
       </p>
     </div>
   );

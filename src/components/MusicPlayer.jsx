@@ -4,7 +4,7 @@ import { supabase } from '../supabase';
 import { useSession } from '../context/SessionContext';
 import { Music, X, Disc, Trash2, ChevronDown, Plus } from 'lucide-react';
 import { LOADING_COPY } from '../lib/loadingCopy';
-import { isIosDevice } from '../lib/device';
+import { isIosDevice, isMobileDevice } from '../lib/device';
 
 function loadYoutubeApi() {
   if (typeof window === 'undefined') return Promise.resolve(null);
@@ -37,8 +37,8 @@ const MusicPlayer = () => {
   const [videoId, setVideoId] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [frameBox, setFrameBox] = useState(null);
-  // iOS: cần chạm + player phải còn trong viewport (không opacity:0 / off-screen)
-  const [audioUnlocked, setAudioUnlocked] = useState(() => !isIosDevice());
+  // Mobile (iOS + Android): không autoplay khi mở app — chờ chạm nút nhạc
+  const [audioUnlocked, setAudioUnlocked] = useState(() => !isMobileDevice());
   const firstPlaylistLoad = useRef(true);
   const slotRef = useRef(null);
   const panelRef = useRef(null);
@@ -217,7 +217,7 @@ const MusicPlayer = () => {
     const wasLocked = !audioUnlocked;
     flushSync(() => {
       setAudioUnlocked(true);
-      // Mở panel lần đầu trên iOS để player visible (WebKit chặn media ẩn)
+      // iOS: mở panel để player visible (WebKit chặn media ẩn)
       if (wasLocked && isIosDevice()) setIsExpanded(true);
     });
     window.setTimeout(() => {

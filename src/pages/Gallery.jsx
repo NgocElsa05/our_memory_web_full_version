@@ -9,6 +9,7 @@ import { useGalleryMedia, GALLERY_MEDIA_QUERY_KEY } from '../hooks/useGalleryMed
 import { uploadToCloudinary } from '../lib/cloudinary';
 import { prepareImageFileForUpload } from '../lib/resizeImageForUpload';
 import { cloudinaryDisplay, cloudinaryThumb } from '../lib/cloudinaryUrl';
+import { notifyPartner } from '../lib/push';
 import { 
   LayoutGrid, Calendar as CalendarIcon, FolderHeart, 
   Plus, X, Trash2, Download, 
@@ -18,7 +19,7 @@ import CuteLoader from '../components/CuteLoader';
 import { LOADING_COPY } from '../lib/loadingCopy';
 
 const Gallery = () => {
-  const { sessionUserId, spaceId } = useSession();
+  const { sessionUserId, partnerId, spaceId } = useSession();
   const queryClient = useQueryClient();
   const { data: media = [] } = useGalleryMedia();
   const [view, setView] = useState('grid'); // grid | calendar | album
@@ -97,6 +98,20 @@ const Gallery = () => {
       if (dbError) throw dbError;
 
       await invalidateGallery();
+      if (partnerId && partnerId !== sessionUserId) {
+        const who = tabNames[sessionUserId] || 'Người ấy';
+        const n = items.length;
+        void notifyPartner({
+          targetMemberId: partnerId,
+          title: 'Kỷ niệm mới 📸',
+          body:
+            n === 1
+              ? `${who} vừa treo thêm một ảnh lên tường`
+              : `${who} vừa treo thêm ${n} ảnh lên tường`,
+          url: '/gallery',
+          tag: 'gallery',
+        });
+      }
       const wait = Math.max(0, MIN_OVERLAY_MS - (Date.now() - startedAt));
       if (wait) await new Promise((r) => setTimeout(r, wait));
       setUploadNote({

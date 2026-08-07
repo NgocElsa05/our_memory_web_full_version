@@ -28,6 +28,9 @@ docs/
 *.md
 !README.md
 
+# Legacy data migration (local only — contains space/member IDs)
+scripts/migrate_legacy*.sql
+
 # Capacitor / Xcode build artifacts (ios/ project itself is generated on Mac — see docs/IOS_WIDGET.md)
 android/
 .capacitor/

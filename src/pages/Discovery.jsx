@@ -279,11 +279,15 @@ const Discovery = () => {
     ]);
     if (error) alert(error.message);
     else {
-      if (currentId !== sessionUserId) {
+      // Thông báo partner khi viết phát hiện (về họ hoặc về mình)
+      if (partnerId && partnerId !== sessionUserId) {
         void notifyPartner({
-          targetMemberId: currentId,
+          targetMemberId: partnerId,
           title: 'Phát hiện mới ✨',
-          body: `${nickByMemberId[sessionUserId] || 'Partner'} vừa viết điều gì đó về bạn`,
+          body:
+            currentId === partnerId
+              ? `${nickByMemberId[sessionUserId] || 'Partner'} vừa viết điều gì đó về bạn`
+              : `${nickByMemberId[sessionUserId] || 'Partner'} vừa thêm một phát hiện`,
           url: '/discovery',
           tag: 'discovery',
         });
@@ -311,18 +315,19 @@ const Discovery = () => {
       setReplyText('');
       await refetchDiscoveries();
       const fact = discoveries.find((d) => d.id === factId);
-      if (fact) {
-        const target =
-          fact.author_id === sessionUserId ? fact.subject_id : fact.author_id;
-        if (target && target !== sessionUserId) {
-          void notifyPartner({
-            targetMemberId: target,
-            title: 'Comment mới 💬',
-            body: `${nickByMemberId[sessionUserId] || 'Partner'} vừa phản hồi một phát hiện`,
-            url: '/discovery',
-            tag: 'discovery-comment',
-          });
-        }
+      const targets = new Set();
+      if (partnerId && partnerId !== sessionUserId) targets.add(partnerId);
+      if (fact?.author_id && fact.author_id !== sessionUserId) targets.add(fact.author_id);
+      if (fact?.subject_id && fact.subject_id !== sessionUserId) targets.add(fact.subject_id);
+      const who = nickByMemberId[sessionUserId] || 'Partner';
+      for (const targetMemberId of targets) {
+        void notifyPartner({
+          targetMemberId,
+          title: 'Comment mới 💬',
+          body: `${who} vừa phản hồi một phát hiện`,
+          url: '/discovery',
+          tag: 'discovery-comment',
+        });
       }
     } else alert('Lỗi: ' + error.message);
     setLoading(false);
