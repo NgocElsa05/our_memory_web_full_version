@@ -2,11 +2,17 @@
   "name": "Our Memory",
   "short_name": "Our Memory",
   "description": "Kỷ niệm của hai bạn",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#7CA1D9",
   "lang": "vi",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "/icons/icon-192.png?v=2",
