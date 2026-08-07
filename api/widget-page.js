@@ -47,30 +47,30 @@ function pageHtml({ origin, days, user1, user2, error }) {
       : '';
 
   return `<!doctype html>
-<html lang="en" style="background:#fff">
+<html lang="en" style="background:#1c1c1e">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<meta name="theme-color" content="#ffffff"/>
+<meta name="theme-color" content="#1c1c1e"/>
 <title>Our Memory</title>
 ${preconnect}
 ${user1?.avatarUrl ? `<link rel="preload" as="image" href="${esc(user1.avatarUrl)}"/>` : ''}
 ${user2?.avatarUrl ? `<link rel="preload" as="image" href="${esc(user2.avatarUrl)}"/>` : ''}
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#fff;color:#1a1a1a;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+html,body{height:100%;background:#1c1c1e;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
 body{display:flex;align-items:center;justify-content:center;padding:8px 10px}
 a.card{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;max-width:420px;text-decoration:none;color:inherit;padding:6px 4px}
 .person{display:flex;flex-direction:column;align-items:center;width:88px;flex-shrink:0}
-.avatar{width:76px;height:76px;border-radius:50%;background:#e4e0ef;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:#7ca1d9;overflow:hidden;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.avatar{width:76px;height:76px;border-radius:50%;background:#3a3a3c;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:#fff;overflow:hidden;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.35)}
 .avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.nick{margin-top:6px;font-size:11px;font-weight:700;color:#6b6570;max-width:88px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.nick{margin-top:6px;font-size:11px;font-weight:700;color:#fff;max-width:88px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;gap:2px}
-.heart{width:34px;height:34px;display:block}
-.days{font-size:28px;font-weight:900;line-height:1.05;letter-spacing:-.02em}
-.label{font-size:11px;font-weight:700;color:#6b6570}
-.msg{text-align:center;padding:16px;font-size:13px;font-weight:600;color:#6b6570;max-width:280px}
-.msg.error{color:#c0392b}
+.heart{width:34px;height:34px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.days{font-size:28px;font-weight:900;line-height:1.05;letter-spacing:-.02em;color:#fff}
+.label{font-size:11px;font-weight:700;color:rgba(255,255,255,.85)}
+.msg{text-align:center;padding:16px;font-size:13px;font-weight:600;color:rgba(255,255,255,.75);max-width:280px}
+.msg.error{color:#ff6b6b}
 </style>
 </head>
 <body>${body}</body>
