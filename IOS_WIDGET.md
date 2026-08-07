@@ -1,5 +1,7 @@
 # Our Memory — iOS Widget (Capacitor + WidgetKit)
 
+> **Không có Mac?** Dùng Scriptable thay thế: [SCRIPTABLE_WIDGET.md](./SCRIPTABLE_WIDGET.md)
+
 Widget Home Screen: **2 avatar + số ngày yêu ở giữa**.
 
 > Máy Windows chỉ chuẩn bị code. **Build & cài lên iPhone cần Mac + Xcode + Apple Developer.**

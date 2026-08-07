@@ -28,6 +28,7 @@ dist-ssr
 !README.md
 !LOADING_ANIMATIONS.md
 !IOS_WIDGET.md
+!SCRIPTABLE_WIDGET.md
 
 # Capacitor / Xcode build artifacts (ios/ project itself is generated on Mac — see IOS_WIDGET.md)
 android/
