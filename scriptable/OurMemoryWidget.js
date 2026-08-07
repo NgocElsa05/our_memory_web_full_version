@@ -9,8 +9,8 @@ const API_BASE = "https://our--memory.vercel.app";
 
 const ACCENT = new Color("#7ca1d9");
 const HEART = new Color("#e85a7a");
-const MUTED = new Color("#6b6570");
-const INK = new Color("#1a1a1a");
+const WHITE = Color.white();
+const AVATAR = 68;
 
 async function fetchSnapshot(code) {
   const url = `${API_BASE}/api/widget?code=${encodeURIComponent(code)}`;
@@ -33,36 +33,36 @@ async function loadAvatar(url) {
 }
 
 function addSoftShadow(text) {
-  text.shadowColor = new Color("#ffffff", 0.85);
-  text.shadowRadius = 2;
-  text.shadowOffset = new Point(0, 0.5);
+  text.shadowColor = new Color("#000000", 0.55);
+  text.shadowRadius = 3;
+  text.shadowOffset = new Point(0, 1);
 }
 
 function addPersonColumn(parent, img, nickname) {
   const col = parent.addStack();
   col.layoutVertically();
   col.centerAlignContent();
-  col.size = new Size(56, 72);
+  col.size = new Size(AVATAR + 4, AVATAR + 18);
 
   if (img) {
     const image = col.addImage(img);
-    image.imageSize = new Size(52, 52);
-    image.cornerRadius = 26;
+    image.imageSize = new Size(AVATAR, AVATAR);
+    image.cornerRadius = AVATAR / 2;
   } else {
     const circle = col.addStack();
-    circle.size = new Size(52, 52);
-    circle.cornerRadius = 26;
+    circle.size = new Size(AVATAR, AVATAR);
+    circle.cornerRadius = AVATAR / 2;
     circle.backgroundColor = new Color("#e4e0ef", 0.92);
     circle.centerAlignContent();
     const letter = circle.addText(String(nickname || "?").trim().charAt(0).toUpperCase() || "?");
-    letter.font = Font.blackSystemFont(18);
+    letter.font = Font.blackSystemFont(22);
     letter.textColor = ACCENT;
   }
 
   col.addSpacer(4);
   const name = col.addText(String(nickname || "").split(/\s+/)[0] || "");
-  name.font = Font.boldSystemFont(9);
-  name.textColor = MUTED;
+  name.font = Font.boldSystemFont(10);
+  name.textColor = WHITE;
   name.lineLimit = 1;
   name.centerAlignText();
   addSoftShadow(name);
@@ -71,10 +71,10 @@ function addPersonColumn(parent, img, nickname) {
 function emptyWidget(message, isError) {
   const w = new ListWidget();
   w.backgroundColor = Color.clear();
-  w.setPadding(12, 10, 12, 10);
+  w.setPadding(8, 8, 8, 8);
   const t = w.addText(message);
   t.font = Font.boldSystemFont(12);
-  t.textColor = isError ? Color.red() : INK;
+  t.textColor = isError ? Color.red() : WHITE;
   addSoftShadow(t);
   return w;
 }
@@ -82,7 +82,7 @@ function emptyWidget(message, isError) {
 async function createWidget(data) {
   const w = new ListWidget();
   w.backgroundColor = Color.clear();
-  w.setPadding(12, 10, 12, 10);
+  w.setPadding(8, 8, 8, 8);
   w.url = `${API_BASE}/`;
 
   const row = w.addStack();
@@ -93,32 +93,32 @@ async function createWidget(data) {
   const img2 = await loadAvatar(data.user2?.avatarUrl);
 
   addPersonColumn(row, img1, data.user1?.nickname);
-  row.addSpacer();
+  row.addSpacer(4);
 
   const mid = row.addStack();
   mid.layoutVertically();
   mid.centerAlignContent();
 
   const heart = mid.addText("❤");
-  heart.font = Font.systemFont(14);
+  heart.font = Font.systemFont(16);
   heart.textColor = HEART;
   heart.centerAlignText();
   addSoftShadow(heart);
 
   mid.addSpacer(2);
   const days = mid.addText(String(data.days ?? 0));
-  days.font = Font.blackRoundedSystemFont(24);
-  days.textColor = INK;
+  days.font = Font.blackRoundedSystemFont(26);
+  days.textColor = WHITE;
   days.centerAlignText();
   addSoftShadow(days);
 
   const label = mid.addText("ngày");
   label.font = Font.boldSystemFont(10);
-  label.textColor = MUTED;
+  label.textColor = WHITE;
   label.centerAlignText();
   addSoftShadow(label);
 
-  row.addSpacer();
+  row.addSpacer(4);
   addPersonColumn(row, img2, data.user2?.nickname);
 
   w.refreshAfterDate = new Date(Date.now() + 60 * 60 * 1000);
