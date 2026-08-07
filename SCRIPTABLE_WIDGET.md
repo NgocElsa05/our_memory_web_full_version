@@ -1,5 +1,7 @@
 # Widget iPhone bằng Scriptable (không cần Mac)
 
+> **Android?** Dùng KWGT: [KWGT_WIDGET.md](./KWGT_WIDGET.md) — cùng API `/api/widget`.
+
 Hiển thị: **avatar user_1 | số ngày | avatar user_2**.
 
 ## Bạn cần làm 3 bước
