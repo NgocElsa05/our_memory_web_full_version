@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background:transparent!important">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -7,15 +7,20 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#00000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="color-scheme" content="only light" />
     <title>Our Memory</title>
     <style>
       :root {
         --accent: #7ca1d9;
-        --heart: #e85a7a;
         --muted: #6b6570;
         --placeholder: #e4e0ef;
         --ink: #1a1a1a;
+      }
+      html,
+      body,
+      #root {
+        background: transparent !important;
+        background-color: rgba(0, 0, 0, 0) !important;
       }
       * {
         box-sizing: border-box;
@@ -25,7 +30,6 @@
       html,
       body {
         height: 100%;
-        background: transparent !important;
         color: var(--ink);
         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         -webkit-tap-highlight-color: transparent;
@@ -35,6 +39,11 @@
         align-items: center;
         justify-content: center;
         padding: 6px 8px;
+      }
+      /* Preview trong browser: ô caro để thấy transparency; widget app bỏ qua */
+      body.preview-checker {
+        background-image: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) !important;
+        background-size: 16px 16px !important;
       }
       a.card {
         display: flex;
@@ -46,7 +55,7 @@
         text-decoration: none;
         color: inherit;
         padding: 4px 2px;
-        background: transparent;
+        background: transparent !important;
       }
       .person {
         display: flex;
@@ -96,6 +105,7 @@
         justify-content: center;
         min-width: 0;
         gap: 2px;
+        background: transparent !important;
       }
       .heart {
         width: 34px;
@@ -123,14 +133,29 @@
         font-weight: 600;
         color: var(--muted);
         max-width: 280px;
-        background: transparent;
+        background: transparent !important;
       }
       .msg.error {
         color: #c0392b;
       }
+      .hint {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        font-size: 11px;
+        color: #666;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 8px;
+        border-radius: 8px;
+      }
+      .hint a {
+        color: #7ca1d9;
+      }
     </style>
   </head>
-  <body>
+  <body style="background:transparent!important">
     <div id="root" class="msg">Loading…</div>
     <script>
       (function () {
@@ -141,6 +166,14 @@
           .trim()
           .toUpperCase();
         var root = document.getElementById('root');
+        var isWidgetHost =
+          /WebsiteWidget|WebWidget|Widgetify|KWGT|Kustom/i.test(
+            navigator.userAgent
+          ) || params.get('embed') === '1';
+
+        if (params.get('preview') === '1') {
+          document.body.classList.add('preview-checker');
+        }
 
         var HEART =
           '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true">' +
@@ -196,7 +229,7 @@
               throw new Error((data && data.error) || 'not_found');
             }
             var days = data.days != null ? data.days : 0;
-            root.outerHTML =
+            var html =
               '<a class="card" href="' +
               API +
               '/" target="_blank" rel="noopener">' +
@@ -210,6 +243,15 @@
               '</div>' +
               personHtml(data.user2) +
               '</a>';
+            if (!isWidgetHost) {
+              html +=
+                '<p class="hint">Trang này đã trong suốt. App WebsiteWidget thường <b>không hỗ trợ</b> nền trong suốt (nó chụp screenshot). Dùng PNG: <a href="' +
+                API +
+                '/api/widget-png?code=' +
+                encodeURIComponent(code) +
+                '">/api/widget-png?code=…</a> trong KWGT (1 lớp Image).</p>';
+            }
+            root.outerHTML = html;
           })
           .catch(function (e) {
             root.className = 'msg error';
