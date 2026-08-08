@@ -129,3 +129,69 @@
   animation: om-mem-pulse 1.6s ease-in-out infinite;
 }
 
+/* Mailbox: thư chưa đọc chớp nhẹ */
+@keyframes om-envelope-blink {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    filter: brightness(1.18);
+    transform: scale(1.04);
+  }
+}
+
+.om-envelope-unread {
+  animation: om-envelope-blink 1.15s ease-in-out infinite;
+}
+
+@keyframes om-letter-modal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes om-letter-sheet-rise {
+  0% {
+    transform: translateY(42%) scale(0.92);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes om-flap-open {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(-168deg);
+  }
+}
+
+.om-letter-modal-backdrop {
+  animation: om-letter-modal-in 0.28s ease-out both;
+}
+
+.om-letter-sheet {
+  animation: om-letter-sheet-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  transform-origin: bottom center;
+}
+
+.om-envelope-flap-open {
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  animation: om-flap-open 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
