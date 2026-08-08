@@ -6,6 +6,13 @@ import { Music, X, Disc, Trash2, ChevronDown, Plus } from 'lucide-react';
 import { LOADING_COPY } from '../lib/loadingCopy';
 import { isIosDevice, isMobileDevice } from '../lib/device';
 
+const FALLBACK_VIDEO_ID = 'jfKfPfyJRdk';
+
+function normalizeYoutubeId(raw) {
+  const id = String(raw || '').trim();
+  return /^[\w-]{11}$/.test(id) ? id : '';
+}
+
 function loadYoutubeApi() {
   if (typeof window === 'undefined') return Promise.resolve(null);
   if (window.YT?.Player) return Promise.resolve(window.YT);
@@ -25,6 +32,8 @@ function loadYoutubeApi() {
       tag.src = 'https://www.youtube.com/iframe_api';
       document.head.appendChild(tag);
     }
+    // API đã có sẵn nhưng callback đã fire trước đó
+    if (window.YT?.Player) resolve(window.YT);
   });
 }
 
@@ -39,17 +48,26 @@ const MusicPlayer = () => {
   const [frameBox, setFrameBox] = useState(null);
   // Mobile (iOS + Android): không autoplay khi mở app — chờ chạm nút nhạc
   const [audioUnlocked, setAudioUnlocked] = useState(() => !isMobileDevice());
+  /** Chrome play rồi pause vì mất user-gesture → hiện nút chạm ▶ trên video */
+  const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
   const firstPlaylistLoad = useRef(true);
   const slotRef = useRef(null);
   const panelRef = useRef(null);
   const ytMountRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const wantedVideoRef = useRef('');
-  const playRetryRef = useRef(0);
+  const playlistRef = useRef([]);
+  const unlockAtRef = useRef(0);
+
+  // Preload YT API sớm — lúc chạm không phải chờ tải script (mất gesture)
+  useEffect(() => {
+    void loadYoutubeApi();
+  }, []);
 
   const fetchPlaylist = useCallback(async () => {
     if (!spaceId) {
       setPlaylist([]);
+      playlistRef.current = [];
       return;
     }
     const { data } = await supabase
@@ -58,14 +76,16 @@ const MusicPlayer = () => {
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false });
     if (data) {
+      playlistRef.current = data;
       setPlaylist(data);
       if (firstPlaylistLoad.current) {
         firstPlaylistLoad.current = false;
-        if (data.length > 0) {
-          const randomIndex = Math.floor(Math.random() * data.length);
-          setVideoId(data[randomIndex].youtube_id);
+        const valid = data.map((s) => normalizeYoutubeId(s.youtube_id)).filter(Boolean);
+        if (valid.length > 0) {
+          const randomIndex = Math.floor(Math.random() * valid.length);
+          setVideoId(valid[randomIndex]);
         } else {
-          setVideoId('jfKfPfyJRdk');
+          setVideoId(FALLBACK_VIDEO_ID);
         }
       }
     }
@@ -78,7 +98,7 @@ const MusicPlayer = () => {
 
   const currentSongTitle =
     playlist.find((s) => s.youtube_id === videoId)?.title ||
-    (videoId === 'jfKfPfyJRdk' ? 'Lofi Chill Nhẹ Nhàng' : LOADING_COPY.AP_SONG_PLAYER);
+    (videoId === FALLBACK_VIDEO_ID ? 'Lofi Chill Nhẹ Nhàng' : LOADING_COPY.AP_SONG_PLAYER);
 
   useEffect(() => {
     if (videoId) {
@@ -138,8 +158,7 @@ const MusicPlayer = () => {
     };
   }, [isExpanded]);
 
-  // YouTube IFrame API — play khi đã unlock; host luôn nằm trong viewport
-  // Mobile: chờ panel mở + đo xong ô video (tránh tạo player 1×1 → Chrome/Android từ chối phát)
+  // Tạo / đổi video — KHÔNG gọi playVideo từ timer ngoài gesture (Chrome sẽ play rồi pause liền)
   useEffect(() => {
     wantedVideoRef.current = videoId || '';
     if (!audioUnlocked || !videoId || !ytMountRef.current) return undefined;
@@ -151,15 +170,21 @@ const MusicPlayer = () => {
       const YT = await loadYoutubeApi();
       if (cancelled || !YT?.Player || !ytMountRef.current) return;
 
-      const id = wantedVideoRef.current;
+      const id = normalizeYoutubeId(wantedVideoRef.current);
       if (!id) return;
 
       const existing = ytPlayerRef.current;
-      if (existing?.loadVideoById) {
+      if (existing?.loadVideoById || existing?.cueVideoById) {
         try {
-          existing.loadVideoById({ videoId: id });
-          existing.unMute?.();
-          existing.playVideo?.();
+          if (isMobileDevice()) {
+            // Cue thôi — playVideo từ effect/timer bị Chrome pause ngay
+            existing.cueVideoById?.({ videoId: id });
+            setNeedsTapToPlay(true);
+          } else {
+            existing.loadVideoById({ videoId: id });
+            existing.unMute?.();
+            existing.playVideo?.();
+          }
           return;
         } catch {
           try {
@@ -177,39 +202,60 @@ const MusicPlayer = () => {
         height: '100%',
         videoId: id,
         playerVars: {
-          autoplay: 1,
+          autoplay: isMobileDevice() ? 0 : 1,
           playsinline: 1,
           rel: 0,
           modestbranding: 1,
           controls: 1,
-          loop: 1,
-          playlist: id,
+          fs: 0,
           origin: window.location.origin,
         },
         events: {
           onReady: (event) => {
             if (cancelled) return;
-            try {
-              event.target.unMute?.();
-              event.target.playVideo();
-            } catch {
-              /* có thể cần thêm 1 tap ▶ trên video */
+            if (!isMobileDevice()) {
+              try {
+                event.target.unMute?.();
+                event.target.playVideo();
+                setNeedsTapToPlay(false);
+              } catch {
+                setNeedsTapToPlay(true);
+              }
+              return;
             }
+            // Mobile: thử phát ngay sau unlock (sticky gesture); nếu Chrome pause → hiện nút chạm
+            const justUnlocked = Date.now() - unlockAtRef.current < 4000;
+            if (justUnlocked) {
+              try {
+                event.target.unMute?.();
+                event.target.playVideo();
+              } catch {
+                /* ignore */
+              }
+            }
+            window.setTimeout(() => {
+              if (cancelled) return;
+              try {
+                const st = event.target.getPlayerState?.();
+                // 1 = playing
+                if (st !== 1) setNeedsTapToPlay(true);
+                else setNeedsTapToPlay(false);
+              } catch {
+                setNeedsTapToPlay(true);
+              }
+            }, 800);
           },
           onStateChange: (event) => {
-            // Ngay sau unlock, Chrome đôi khi pause (−1/2) — thử phát lại tối đa 2 lần
-            if (cancelled || !audioUnlocked) return;
-            if ((event?.data === 2 || event?.data === -1) && playRetryRef.current < 2) {
-              playRetryRef.current += 1;
-              window.setTimeout(() => {
-                try {
-                  event.target?.unMute?.();
-                  event.target?.playVideo?.();
-                } catch {
-                  /* ignore */
-                }
-              }, 300);
+            if (cancelled) return;
+            // 1 playing
+            if (event?.data === 1) setNeedsTapToPlay(false);
+            // 2 paused — nếu vừa unlock thì cần chạm lại (đừng tự playVideo ngoài gesture)
+            if (event?.data === 2 && Date.now() - unlockAtRef.current < 5000) {
+              setNeedsTapToPlay(true);
             }
+          },
+          onError: () => {
+            if (!cancelled) setNeedsTapToPlay(true);
           },
         },
       });
@@ -233,30 +279,44 @@ const MusicPlayer = () => {
     };
   }, []);
 
+  /** Chạm ▶ — phải gọi playVideo trong click handler (user gesture thật) */
+  const tapPlayNow = useCallback(() => {
+    setNeedsTapToPlay(false);
+    unlockAtRef.current = Date.now();
+    try {
+      const p = ytPlayerRef.current;
+      if (!p) {
+        setNeedsTapToPlay(true);
+        return;
+      }
+      p.unMute?.();
+      p.playVideo?.();
+    } catch {
+      setNeedsTapToPlay(true);
+    }
+  }, []);
+
   const unlockAndPlay = useCallback(() => {
     const wasLocked = !audioUnlocked;
-    playRetryRef.current = 0;
+    unlockAtRef.current = Date.now();
+    setNeedsTapToPlay(false);
+
+    // Chọn videoId ngay trong click (tránh effect chạy sau khi playlist về → mất gesture)
+    let id = normalizeYoutubeId(videoId);
+    if (!id) {
+      const fromList = playlistRef.current
+        .map((s) => normalizeYoutubeId(s.youtube_id))
+        .filter(Boolean);
+      id = fromList[0] || FALLBACK_VIDEO_ID;
+      setVideoId(id);
+    }
+    wantedVideoRef.current = id;
+
     flushSync(() => {
       setAudioUnlocked(true);
-      // Mobile: mở panel ngay để iframe đủ lớn trong viewport (không phát được nếu player siêu nhỏ)
       if (wasLocked && isMobileDevice()) setIsExpanded(true);
     });
-    window.setTimeout(() => {
-      try {
-        ytPlayerRef.current?.unMute?.();
-        ytPlayerRef.current?.playVideo?.();
-      } catch {
-        /* ignore */
-      }
-    }, 500);
-    window.setTimeout(() => {
-      try {
-        ytPlayerRef.current?.playVideo?.();
-      } catch {
-        /* ignore */
-      }
-    }, 1200);
-  }, [audioUnlocked]);
+  }, [audioUnlocked, videoId]);
 
   const closePanel = () => {
     setShowDropdown(false);
@@ -291,7 +351,18 @@ const MusicPlayer = () => {
         setVideoId(match[2]);
         setLink('');
         setSongTitle('');
+        setNeedsTapToPlay(false);
+        unlockAtRef.current = Date.now();
         fetchPlaylist();
+        window.requestAnimationFrame(() => {
+          try {
+            ytPlayerRef.current?.loadVideoById?.({ videoId: match[2] });
+            ytPlayerRef.current?.unMute?.();
+            ytPlayerRef.current?.playVideo?.();
+          } catch {
+            setNeedsTapToPlay(true);
+          }
+        });
       } else {
         alert(error.message);
       }
@@ -335,8 +406,21 @@ const MusicPlayer = () => {
         };
 
   const player = (
-    <div className="bg-black" style={playerHostStyle} aria-hidden={!isExpanded}>
+    <div className="relative bg-black" style={playerHostStyle} aria-hidden={!isExpanded}>
       <div ref={ytMountRef} className="h-full w-full" />
+      {audioUnlocked && needsTapToPlay && isExpanded && (
+        <button
+          type="button"
+          onClick={tapPlayNow}
+          className="absolute inset-0 z-[130] flex flex-col items-center justify-center gap-2 bg-black/55 text-white"
+          style={{ borderRadius: '1rem' }}
+        >
+          <span className="w-14 h-14 rounded-full bg-white/95 text-[var(--om-primary)] flex items-center justify-center text-2xl shadow-lg">
+            ▶
+          </span>
+          <span className="text-[11px] font-black uppercase tracking-wider">Chạm để phát</span>
+        </button>
+      )}
     </div>
   );
 
@@ -393,13 +477,8 @@ const MusicPlayer = () => {
             ref={slotRef}
             className="rounded-2xl overflow-hidden mb-3 md:mb-4 shadow-inner bg-black aspect-video relative z-0 border border-[color-mix(in_srgb,var(--om-primary-soft)_20%,transparent)]"
           >
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/50 px-4 text-center">
-              {audioUnlocked ? 'Đang phát…' : 'Chạm nút phát nhạc'}
-              {audioUnlocked && isMobileDevice() && (
-                <span className="normal-case tracking-normal font-semibold text-white/70 text-[11px]">
-                  Nếu chưa nghe, chạm nút ▶ trên video một lần
-                </span>
-              )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/50 px-4 text-center pointer-events-none">
+              {audioUnlocked ? (needsTapToPlay ? 'Chạm ▶ trên video' : 'Đang phát…') : 'Chạm nút phát nhạc'}
             </div>
           </div>
 
@@ -423,15 +502,27 @@ const MusicPlayer = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setVideoId(song.youtube_id);
+                        const id = normalizeYoutubeId(song.youtube_id);
+                        if (!id) return;
+                        setVideoId(id);
                         setShowDropdown(false);
-                        window.setTimeout(() => {
+                        setNeedsTapToPlay(false);
+                        unlockAtRef.current = Date.now();
+                        // Phát trong click handler — giữ user gesture
+                        window.requestAnimationFrame(() => {
                           try {
-                            ytPlayerRef.current?.playVideo?.();
+                            const p = ytPlayerRef.current;
+                            if (p?.loadVideoById) {
+                              p.loadVideoById({ videoId: id });
+                              p.unMute?.();
+                              p.playVideo?.();
+                            } else {
+                              setNeedsTapToPlay(true);
+                            }
                           } catch {
-                            /* ignore */
+                            setNeedsTapToPlay(true);
                           }
-                        }, 300);
+                        });
                       }}
                       className="flex-1 truncate text-left min-w-0"
                     >
