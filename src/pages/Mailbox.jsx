@@ -15,57 +15,109 @@ import {
 import CuteLoader from '../components/CuteLoader';
 import { LOADING_COPY } from '../lib/loadingCopy';
 
+/** Màu phong bì theo theme, soft như ảnh mẫu */
+const ENV = {
+  body: 'color-mix(in srgb, var(--om-primary) 42%, white)',
+  bodyDeep: 'color-mix(in srgb, var(--om-primary) 62%, white)',
+  inner: 'color-mix(in srgb, var(--om-primary) 55%, #e07a5f)',
+  line: 'color-mix(in srgb, var(--om-primary) 55%, #b07070)',
+  paper: '#fff8f0',
+  heart: 'color-mix(in srgb, var(--om-accent) 35%, #e85a6b)',
+};
+
+function HeartSeal({ cx, cy, s = 1 }) {
+  return (
+    <path
+      transform={`translate(${cx} ${cy}) scale(${s})`}
+      d="M0-2.2c-1.4-2.8-5.2-2.8-5.2.7 0 3.5 5.2 6.8 5.2 6.8s5.2-3.3 5.2-6.8c0-3.5-3.8-3.5-5.2-.7z"
+      fill={ENV.heart}
+    />
+  );
+}
+
 /** Phong bì đóng — thư chưa đọc */
 function ClosedEnvelopeIcon({ className = '' }) {
   return (
-    <svg viewBox="0 0 120 90" className={className} aria-hidden>
-      <rect x="6" y="18" width="108" height="64" rx="5" fill="var(--om-primary)" />
+    <svg
+      viewBox="0 0 160 120"
+      className={className}
+      aria-hidden
+      style={{ filter: 'drop-shadow(0 4px 8px color-mix(in srgb, var(--om-primary) 22%, transparent))' }}
+    >
+      <rect x="14" y="28" width="132" height="78" rx="12" fill={ENV.body} />
       <path
-        d="M6 22 L60 58 L114 22"
-        fill="none"
-        stroke="color-mix(in srgb, var(--om-on-primary) 30%, transparent)"
-        strokeWidth="2.2"
-        strokeLinejoin="round"
+        d="M14 40 C14 34 20 28 26 28 H134 C140 28 146 34 146 40 L80 78 Z"
+        fill={ENV.bodyDeep}
       />
       <path
-        d="M6 78 L46 44 M114 78 L74 44"
+        d="M14 40 L80 78 L146 40"
         fill="none"
-        stroke="color-mix(in srgb, var(--om-on-primary) 22%, transparent)"
+        stroke={ENV.line}
         strokeWidth="2"
+        strokeLinejoin="round"
+        opacity="0.45"
       />
       <path
-        d="M60 42c-2.8-5.6-10.5-5.6-10.5 1 0 6.3 10.5 13 10.5 13s10.5-6.7 10.5-13c0-6.6-7.7-6.6-10.5-1z"
-        fill="var(--om-accent)"
+        d="M14 100 L52 62 M146 100 L108 62"
+        fill="none"
+        stroke={ENV.line}
+        strokeWidth="1.8"
+        opacity="0.28"
       />
+      <HeartSeal cx={80} cy={58} s={1.25} />
     </svg>
   );
 }
 
-/** Phong bì mở — thư đã đọc (giống ảnh tham chiếu) */
+/** Phong bì mở — thư đã đọc (bám ảnh mẫu) */
 function OpenEnvelopeIcon({ className = '' }) {
   return (
-    <svg viewBox="0 0 120 100" className={className} aria-hidden>
-      {/* Nắp mở hướng lên (mặt trong đậm hơn) */}
+    <svg
+      viewBox="0 0 160 140"
+      className={className}
+      aria-hidden
+      style={{ filter: 'drop-shadow(0 4px 8px color-mix(in srgb, var(--om-primary) 22%, transparent))' }}
+    >
+      {/* Nắp mở lên — mặt trong đậm hơn */}
       <path
-        d="M6 46 L60 10 L114 46 Z"
-        fill="color-mix(in srgb, var(--om-primary) 52%, #9a4558)"
+        d="M20 70 L80 22 L140 70 Z"
+        fill={ENV.inner}
+        stroke={ENV.line}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
       />
-      {/* Tờ giấy nhô ra khỏi túi */}
-      <rect x="34" y="18" width="52" height="42" rx="2.5" fill="#f7f1e6" />
+      {/* Tờ giấy kem + tim */}
+      <rect x="52" y="38" width="56" height="52" rx="7" fill={ENV.paper} />
+      <HeartSeal cx={80} cy={56} s={1.5} />
+      {/* Thân + túi trước (che mép giấy) */}
       <path
-        d="M60 34c-1.5-3-5.6-3-5.6 0.5 0 3.4 5.6 7 5.6 7s5.6-3.6 5.6-7c0-3.5-4.1-3.5-5.6-0.5z"
-        fill="var(--om-accent)"
+        d="M16 70
+           H144
+           C150 70 154 74 154 80
+           V112
+           C154 122 146 128 136 128
+           H24
+           C14 128 6 122 6 112
+           V80
+           C6 74 10 70 16 70 Z"
+        fill={ENV.body}
       />
-      {/* Thân phong bì đè mép dưới tờ giấy */}
+      {/* Nếp gấp túi chữ V */}
       <path
-        d="M6 46 H114 Q118 46 118 50 V88 Q118 94 112 94 H8 Q2 94 2 88 V50 Q2 46 6 46 Z"
-        fill="var(--om-primary)"
-      />
-      <path
-        d="M2 50 L60 82 L118 50"
+        d="M6 80 L80 118 L154 80"
         fill="none"
-        stroke="color-mix(in srgb, var(--om-on-primary) 22%, transparent)"
-        strokeWidth="1.8"
+        stroke={ENV.line}
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+        opacity="0.42"
+      />
+      <path
+        d="M24 128 L80 98 L136 128"
+        fill="none"
+        stroke={ENV.line}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        opacity="0.22"
       />
     </svg>
   );
@@ -363,7 +415,7 @@ const Mailbox = () => {
         {lettersLoading && <CuteLoader message={LOADING_COPY.MB_LOAD} className="py-12" />}
 
         {!lettersLoading && filteredLetters.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-3 gap-x-2 gap-y-3 sm:gap-x-4 sm:gap-y-5 px-1">
             {filteredLetters.map((letter) => {
               // Chưa đọc = đóng; đã đọc = mở (outbox: đóng khi đối phương chưa đọc)
               const isOpen = letter.is_read === true;
@@ -372,13 +424,13 @@ const Mailbox = () => {
                   key={letter.id}
                   type="button"
                   onClick={() => openLetterModal(letter)}
-                  className="group relative aspect-[5/4] rounded-2xl p-1.5 sm:p-2.5 bg-white/70 border border-[color-mix(in_srgb,var(--om-primary-soft)_28%,transparent)] shadow-sm hover:shadow-md active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)]"
+                  className="group relative aspect-square p-1 bg-transparent border-0 shadow-none active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)] focus-visible:rounded-2xl"
                   aria-label={`${isOpen ? 'Thư đã đọc' : 'Thư mới'} từ ${letter.sender_name || 'người ấy'}`}
                 >
                   {isOpen ? (
-                    <OpenEnvelopeIcon className="w-full h-full drop-shadow-sm group-hover:-translate-y-0.5 transition-transform" />
+                    <OpenEnvelopeIcon className="w-full h-full group-hover:-translate-y-1 group-hover:scale-[1.03] transition-transform duration-200" />
                   ) : (
-                    <ClosedEnvelopeIcon className="w-full h-full drop-shadow-sm group-hover:-translate-y-0.5 transition-transform" />
+                    <ClosedEnvelopeIcon className="w-full h-full group-hover:-translate-y-1 group-hover:scale-[1.03] transition-transform duration-200" />
                   )}
                 </button>
               );
