@@ -45,6 +45,7 @@ const MusicPlayer = () => {
   const ytMountRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const wantedVideoRef = useRef('');
+  const playRetryRef = useRef(0);
 
   const fetchPlaylist = useCallback(async () => {
     if (!spaceId) {
@@ -138,9 +139,11 @@ const MusicPlayer = () => {
   }, [isExpanded]);
 
   // YouTube IFrame API — play khi đã unlock; host luôn nằm trong viewport
+  // Mobile: chờ panel mở + đo xong ô video (tránh tạo player 1×1 → Chrome/Android từ chối phát)
   useEffect(() => {
     wantedVideoRef.current = videoId || '';
     if (!audioUnlocked || !videoId || !ytMountRef.current) return undefined;
+    if (isMobileDevice() && (!isExpanded || !frameBox)) return undefined;
 
     let cancelled = false;
 
@@ -155,6 +158,7 @@ const MusicPlayer = () => {
       if (existing?.loadVideoById) {
         try {
           existing.loadVideoById({ videoId: id });
+          existing.unMute?.();
           existing.playVideo?.();
           return;
         } catch {
@@ -186,9 +190,25 @@ const MusicPlayer = () => {
           onReady: (event) => {
             if (cancelled) return;
             try {
+              event.target.unMute?.();
               event.target.playVideo();
             } catch {
-              /* iOS có thể cần thêm 1 tap trên player */
+              /* có thể cần thêm 1 tap ▶ trên video */
+            }
+          },
+          onStateChange: (event) => {
+            // Ngay sau unlock, Chrome đôi khi pause (−1/2) — thử phát lại tối đa 2 lần
+            if (cancelled || !audioUnlocked) return;
+            if ((event?.data === 2 || event?.data === -1) && playRetryRef.current < 2) {
+              playRetryRef.current += 1;
+              window.setTimeout(() => {
+                try {
+                  event.target?.unMute?.();
+                  event.target?.playVideo?.();
+                } catch {
+                  /* ignore */
+                }
+              }, 300);
             }
           },
         },
@@ -200,7 +220,7 @@ const MusicPlayer = () => {
     return () => {
       cancelled = true;
     };
-  }, [audioUnlocked, videoId]);
+  }, [audioUnlocked, videoId, isExpanded, frameBox]);
 
   useEffect(() => {
     return () => {
@@ -215,18 +235,27 @@ const MusicPlayer = () => {
 
   const unlockAndPlay = useCallback(() => {
     const wasLocked = !audioUnlocked;
+    playRetryRef.current = 0;
     flushSync(() => {
       setAudioUnlocked(true);
-      // iOS: mở panel để player visible (WebKit chặn media ẩn)
-      if (wasLocked && isIosDevice()) setIsExpanded(true);
+      // Mobile: mở panel ngay để iframe đủ lớn trong viewport (không phát được nếu player siêu nhỏ)
+      if (wasLocked && isMobileDevice()) setIsExpanded(true);
     });
+    window.setTimeout(() => {
+      try {
+        ytPlayerRef.current?.unMute?.();
+        ytPlayerRef.current?.playVideo?.();
+      } catch {
+        /* ignore */
+      }
+    }, 500);
     window.setTimeout(() => {
       try {
         ytPlayerRef.current?.playVideo?.();
       } catch {
         /* ignore */
       }
-    }, 400);
+    }, 1200);
   }, [audioUnlocked]);
 
   const closePanel = () => {
@@ -366,7 +395,7 @@ const MusicPlayer = () => {
           >
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/50 px-4 text-center">
               {audioUnlocked ? 'Đang phát…' : 'Chạm nút phát nhạc'}
-              {audioUnlocked && isIosDevice() && (
+              {audioUnlocked && isMobileDevice() && (
                 <span className="normal-case tracking-normal font-semibold text-white/70 text-[11px]">
                   Nếu chưa nghe, chạm nút ▶ trên video một lần
                 </span>
