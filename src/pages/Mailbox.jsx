@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase';
@@ -15,109 +15,130 @@ import {
 import CuteLoader from '../components/CuteLoader';
 import { LOADING_COPY } from '../lib/loadingCopy';
 
-/** Màu phong bì theo theme, soft như ảnh mẫu */
 const ENV = {
-  body: 'color-mix(in srgb, var(--om-primary) 42%, white)',
-  bodyDeep: 'color-mix(in srgb, var(--om-primary) 62%, white)',
-  inner: 'color-mix(in srgb, var(--om-primary) 55%, #e07a5f)',
-  line: 'color-mix(in srgb, var(--om-primary) 55%, #b07070)',
+  body: 'var(--om-primary)',
+  line: 'color-mix(in srgb, var(--om-primary) 62%, #2a2a2a)',
+  inner: 'color-mix(in srgb, var(--om-primary) 70%, #8b4a3a)',
   paper: '#fff8f0',
-  heart: 'color-mix(in srgb, var(--om-accent) 35%, #e85a6b)',
+  heart: 'var(--om-envelope-heart, var(--om-lavender))',
 };
 
-function HeartSeal({ cx, cy, s = 1 }) {
-  return (
-    <path
-      transform={`translate(${cx} ${cy}) scale(${s})`}
-      d="M0-2.2c-1.4-2.8-5.2-2.8-5.2.7 0 3.5 5.2 6.8 5.2 6.8s5.2-3.3 5.2-6.8c0-3.5-3.8-3.5-5.2-.7z"
-      fill={ENV.heart}
-    />
-  );
-}
-
-/** Phong bì đóng — thư chưa đọc */
+/** Phong bì đóng — logic khối (chuẩn code bạn gửi), màu theo theme */
 function ClosedEnvelopeIcon({ className = '' }) {
+  const uid = useId().replace(/:/g, '');
+  const clipId = `om-env-clip-${uid}`;
+
   return (
     <svg
-      viewBox="0 0 160 120"
+      viewBox="0 0 400 260"
       className={className}
       aria-hidden
-      style={{ filter: 'drop-shadow(0 4px 8px color-mix(in srgb, var(--om-primary) 22%, transparent))' }}
+      style={{ filter: 'drop-shadow(0 6px 12px color-mix(in srgb, var(--om-primary) 28%, transparent))' }}
     >
-      <rect x="14" y="28" width="132" height="78" rx="12" fill={ENV.body} />
-      <path
-        d="M14 40 C14 34 20 28 26 28 H134 C140 28 146 34 146 40 L80 78 Z"
-        fill={ENV.bodyDeep}
-      />
-      <path
-        d="M14 40 L80 78 L146 40"
+      <defs>
+        <clipPath id={clipId}>
+          <rect x="0" y="0" width="400" height="260" rx="14" ry="14" />
+        </clipPath>
+      </defs>
+
+      <rect x="0" y="0" width="400" height="260" fill={ENV.body} rx="14" ry="14" />
+
+      <g clipPath={`url(#${clipId})`}>
+        <polygon
+          points="-10,270 200,110 410,270"
+          fill={ENV.body}
+          stroke={ENV.line}
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+        <polygon
+          points="-10,-10 200,150 410,-10"
+          fill={ENV.body}
+          stroke={ENV.line}
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+      </g>
+
+      <rect
+        x="2"
+        y="2"
+        width="396"
+        height="256"
         fill="none"
         stroke={ENV.line}
-        strokeWidth="2"
-        strokeLinejoin="round"
-        opacity="0.45"
+        strokeWidth="4"
+        rx="12"
+        ry="12"
       />
-      <path
-        d="M14 100 L52 62 M146 100 L108 62"
-        fill="none"
-        stroke={ENV.line}
-        strokeWidth="1.8"
-        opacity="0.28"
-      />
-      <HeartSeal cx={80} cy={58} s={1.25} />
+
+      <g transform="translate(200, 135) scale(1.3)">
+        <path
+          d="M0,15 C0,15 -18,2 -18,-10 C-18,-20 -6,-24 0,-10 C6,-24 18,-20 18,-10 C18,2 0,15 0,15 Z"
+          fill={ENV.heart}
+        />
+      </g>
     </svg>
   );
 }
 
-/** Phong bì mở — thư đã đọc (bám ảnh mẫu) */
+/** Phong bì mở — cùng hệ màu / nét với lá đóng */
 function OpenEnvelopeIcon({ className = '' }) {
+  const uid = useId().replace(/:/g, '');
+  const clipId = `om-env-open-${uid}`;
+
   return (
     <svg
-      viewBox="0 0 160 140"
+      viewBox="0 0 400 300"
       className={className}
       aria-hidden
-      style={{ filter: 'drop-shadow(0 4px 8px color-mix(in srgb, var(--om-primary) 22%, transparent))' }}
+      style={{ filter: 'drop-shadow(0 6px 12px color-mix(in srgb, var(--om-primary) 28%, transparent))' }}
     >
-      {/* Nắp mở lên — mặt trong đậm hơn */}
-      <path
-        d="M20 70 L80 22 L140 70 Z"
+      <defs>
+        <clipPath id={clipId}>
+          <rect x="0" y="70" width="400" height="230" rx="14" ry="14" />
+        </clipPath>
+      </defs>
+
+      {/* Nắp mở lên */}
+      <polygon
+        points="8,78 200,8 392,78"
         fill={ENV.inner}
         stroke={ENV.line}
-        strokeWidth="1.4"
+        strokeWidth="3.5"
         strokeLinejoin="round"
       />
-      {/* Tờ giấy kem + tim */}
-      <rect x="52" y="38" width="56" height="52" rx="7" fill={ENV.paper} />
-      <HeartSeal cx={80} cy={56} s={1.5} />
-      {/* Thân + túi trước (che mép giấy) */}
-      <path
-        d="M16 70
-           H144
-           C150 70 154 74 154 80
-           V112
-           C154 122 146 128 136 128
-           H24
-           C14 128 6 122 6 112
-           V80
-           C6 74 10 70 16 70 Z"
-        fill={ENV.body}
-      />
-      {/* Nếp gấp túi chữ V */}
-      <path
-        d="M6 80 L80 118 L154 80"
+
+      {/* Tờ giấy + tim */}
+      <rect x="128" y="48" width="144" height="130" rx="10" fill={ENV.paper} />
+      <g transform="translate(200, 100) scale(1.15)">
+        <path
+          d="M0,15 C0,15 -18,2 -18,-10 C-18,-20 -6,-24 0,-10 C6,-24 18,-20 18,-10 C18,2 0,15 0,15 Z"
+          fill={ENV.heart}
+        />
+      </g>
+
+      {/* Thân phong bì */}
+      <rect x="0" y="70" width="400" height="230" fill={ENV.body} rx="14" ry="14" />
+      <g clipPath={`url(#${clipId})`}>
+        <polygon
+          points="-10,310 200,150 410,310"
+          fill={ENV.body}
+          stroke={ENV.line}
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+      </g>
+      <rect
+        x="2"
+        y="72"
+        width="396"
+        height="226"
         fill="none"
         stroke={ENV.line}
-        strokeWidth="2.2"
-        strokeLinejoin="round"
-        opacity="0.42"
-      />
-      <path
-        d="M24 128 L80 98 L136 128"
-        fill="none"
-        stroke={ENV.line}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-        opacity="0.22"
+        strokeWidth="4"
+        rx="12"
+        ry="12"
       />
     </svg>
   );
@@ -424,7 +445,7 @@ const Mailbox = () => {
                   key={letter.id}
                   type="button"
                   onClick={() => openLetterModal(letter)}
-                  className="group relative aspect-square p-1 bg-transparent border-0 shadow-none active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)] focus-visible:rounded-2xl"
+                  className="group relative aspect-[10/7] p-0.5 bg-transparent border-0 shadow-none active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)] focus-visible:rounded-2xl"
                   aria-label={`${isOpen ? 'Thư đã đọc' : 'Thư mới'} từ ${letter.sender_name || 'người ấy'}`}
                 >
                   {isOpen ? (

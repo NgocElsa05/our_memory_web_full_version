@@ -61,6 +61,7 @@ export const AUTH_DEFAULT_CSS_VARS = {
   '--om-accent': '#e7b5d3',
   '--om-muted': '#d7c8e9',
   '--om-lavender': '#d7c8e9',
+  '--om-envelope-heart': '#e7b5d3',
   '--om-tint': '#f4f5fa',
   '--om-field': '#f7f8fc',
   '--om-on-field': '#1a1a1a',
@@ -127,6 +128,11 @@ export function getThemeCssVars(themeKey) {
   const field = `color-mix(in srgb, ${light} 38%, white)`;
   const tint = `color-mix(in srgb, ${light} 48%, white)`;
 
+  // Neapolitan: c3 là đen (#121212) — dùng xanh c5 cho accent/tim, tránh trái tim đen
+  const accent = t.key === 'neapolitan' ? c5 : c3;
+  const envelopeHeart =
+    t.key === 'neapolitan' ? c5 : luminance(c3) < 0.22 ? c1 : c3;
+
   return {
     '--om-c1': c1,
     '--om-c2': c2,
@@ -136,16 +142,17 @@ export function getThemeCssVars(themeKey) {
     '--om-c6': c6,
     '--om-primary': c1,
     '--om-primary-soft': c2,
-    '--om-accent': c3,
+    '--om-accent': accent,
     '--om-muted': c4,
     '--om-lavender': c5,
+    '--om-envelope-heart': envelopeHeart,
     '--om-tint': tint,
     '--om-field': field,
     '--om-on-field': '#1a1a1a',
     '--om-placeholder': '#5b6472',
     '--om-bg': light,
     '--om-on-primary': onColor(c1),
-    '--om-on-accent': onColor(c3),
+    '--om-on-accent': onColor(accent),
     '--om-shadow': `${c1}33`,
   };
 }
