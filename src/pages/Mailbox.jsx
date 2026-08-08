@@ -16,10 +16,16 @@ import CuteLoader from '../components/CuteLoader';
 import { LOADING_COPY } from '../lib/loadingCopy';
 
 const ENV = {
+  /** Phong bì đóng */
   body: 'var(--om-primary)',
   line: 'color-mix(in srgb, var(--om-primary) 62%, #2a2a2a)',
-  inner: 'color-mix(in srgb, var(--om-primary) 70%, #8b4a3a)',
-  paper: '#fff8f0',
+  /** Phong bì mở — lớp nền nhạt / mặt trước đậm (theo code hình khối) */
+  openBack: 'color-mix(in srgb, var(--om-primary) 34%, white)',
+  openBackLine: 'color-mix(in srgb, var(--om-primary) 48%, #d0a8a8)',
+  openFront: 'var(--om-primary)',
+  openFrontLine: 'color-mix(in srgb, var(--om-primary) 68%, #4a2a2a)',
+  paper: '#fdf7ef',
+  paperLine: '#e8dac5',
   heart: 'var(--om-envelope-heart, var(--om-lavender))',
 };
 
@@ -82,63 +88,65 @@ function ClosedEnvelopeIcon({ className = '' }) {
   );
 }
 
-/** Phong bì mở — cùng hệ màu / nét với lá đóng */
+/** Phong bì mở — logic hình khối (code bạn gửi), màu theo theme */
 function OpenEnvelopeIcon({ className = '' }) {
-  const uid = useId().replace(/:/g, '');
-  const clipId = `om-env-open-${uid}`;
-
   return (
     <svg
-      viewBox="0 0 400 300"
+      viewBox="0 0 400 340"
       className={className}
       aria-hidden
-      style={{ filter: 'drop-shadow(0 6px 12px color-mix(in srgb, var(--om-primary) 28%, transparent))' }}
+      style={{ filter: 'drop-shadow(0 8px 16px color-mix(in srgb, var(--om-primary) 26%, transparent))' }}
     >
-      <defs>
-        <clipPath id={clipId}>
-          <rect x="0" y="70" width="400" height="230" rx="14" ry="14" />
-        </clipPath>
-      </defs>
-
-      {/* Nắp mở lên */}
-      <polygon
-        points="8,78 200,8 392,78"
-        fill={ENV.inner}
-        stroke={ENV.line}
-        strokeWidth="3.5"
-        strokeLinejoin="round"
+      {/* Lớp 1: nền nhạt + nắp mở */}
+      <rect x="0" y="120" width="400" height="200" fill={ENV.openBack} />
+      <polygon points="0,120 200,10 400,120" fill={ENV.openBack} />
+      <path
+        d="M0,320 L0,120 L200,10 L400,120 L400,320"
+        fill="none"
+        stroke={ENV.openBackLine}
+        strokeWidth="2"
       />
 
-      {/* Tờ giấy + tim */}
-      <rect x="128" y="48" width="144" height="130" rx="10" fill={ENV.paper} />
-      <g transform="translate(200, 100) scale(1.15)">
+      {/* Lớp 2: tờ thư + tim */}
+      <rect
+        x="50"
+        y="65"
+        width="300"
+        height="180"
+        fill={ENV.paper}
+        rx="4"
+        ry="4"
+        stroke={ENV.paperLine}
+        strokeWidth="2"
+      />
+      <g transform="translate(200, 155) scale(1.3)">
         <path
           d="M0,15 C0,15 -18,2 -18,-10 C-18,-20 -6,-24 0,-10 C6,-24 18,-20 18,-10 C18,2 0,15 0,15 Z"
           fill={ENV.heart}
         />
       </g>
 
-      {/* Thân phong bì */}
-      <rect x="0" y="70" width="400" height="230" fill={ENV.body} rx="14" ry="14" />
-      <g clipPath={`url(#${clipId})`}>
-        <polygon
-          points="-10,310 200,150 410,310"
-          fill={ENV.body}
-          stroke={ENV.line}
-          strokeWidth="4"
-          strokeLinejoin="round"
-        />
-      </g>
-      <rect
-        x="2"
-        y="72"
-        width="396"
-        height="226"
-        fill="none"
-        stroke={ENV.line}
-        strokeWidth="4"
-        rx="12"
-        ry="12"
+      {/* Lớp 3: mặt trước đậm — 3 tam giác */}
+      <polygon
+        points="0,120 140,230 0,320"
+        fill={ENV.openFront}
+        stroke={ENV.openFrontLine}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <polygon
+        points="400,120 260,230 400,320"
+        fill={ENV.openFront}
+        stroke={ENV.openFrontLine}
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <polygon
+        points="0,320 200,180 400,320"
+        fill={ENV.openFront}
+        stroke={ENV.openFrontLine}
+        strokeWidth="3"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -445,7 +453,7 @@ const Mailbox = () => {
                   key={letter.id}
                   type="button"
                   onClick={() => openLetterModal(letter)}
-                  className="group relative aspect-[10/7] p-0.5 bg-transparent border-0 shadow-none active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)] focus-visible:rounded-2xl"
+                  className="group relative aspect-[20/17] p-0.5 bg-transparent border-0 shadow-none active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)] focus-visible:rounded-2xl"
                   aria-label={`${isOpen ? 'Thư đã đọc' : 'Thư mới'} từ ${letter.sender_name || 'người ấy'}`}
                 >
                   {isOpen ? (
