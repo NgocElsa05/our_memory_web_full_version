@@ -15,138 +15,95 @@ import {
 import CuteLoader from '../components/CuteLoader';
 import { LOADING_COPY } from '../lib/loadingCopy';
 
-/** Phong bì đóng — màu theo theme */
+/** Phong bì đóng — thư chưa đọc */
 function ClosedEnvelopeIcon({ className = '' }) {
   return (
     <svg viewBox="0 0 120 90" className={className} aria-hidden>
-      <rect
-        x="4"
-        y="10"
-        width="112"
-        height="72"
-        rx="6"
-        fill="var(--om-primary)"
-      />
+      <rect x="6" y="18" width="108" height="64" rx="5" fill="var(--om-primary)" />
       <path
-        d="M4 16 L60 52 L116 16"
+        d="M6 22 L60 58 L114 22"
         fill="none"
-        stroke="color-mix(in srgb, var(--om-on-primary) 28%, transparent)"
+        stroke="color-mix(in srgb, var(--om-on-primary) 30%, transparent)"
         strokeWidth="2.2"
         strokeLinejoin="round"
       />
       <path
-        d="M4 78 L48 42"
+        d="M6 78 L46 44 M114 78 L74 44"
         fill="none"
         stroke="color-mix(in srgb, var(--om-on-primary) 22%, transparent)"
         strokeWidth="2"
       />
       <path
-        d="M116 78 L72 42"
-        fill="none"
-        stroke="color-mix(in srgb, var(--om-on-primary) 22%, transparent)"
-        strokeWidth="2"
-      />
-      <path
-        d="M60 38c-3.2-6.4-12-6.4-12 1.2 0 7.2 12 14.8 12 14.8s12-7.6 12-14.8c0-7.6-8.8-7.6-12-1.2z"
+        d="M60 42c-2.8-5.6-10.5-5.6-10.5 1 0 6.3 10.5 13 10.5 13s10.5-6.7 10.5-13c0-6.6-7.7-6.6-10.5-1z"
         fill="var(--om-accent)"
       />
     </svg>
   );
 }
 
-/** Phong bì mở (nắp + thân) — dùng trong popup */
-function OpenEnvelopeStage({ children }) {
+/** Phong bì mở — thư đã đọc (giống ảnh tham chiếu) */
+function OpenEnvelopeIcon({ className = '' }) {
   return (
-    <div className="relative w-full max-w-[300px] mx-auto" style={{ perspective: 900 }}>
-      {/* Tờ thư nhô lên */}
-      <div className="om-letter-sheet relative z-10 mx-auto w-[86%]">{children}</div>
-
-      {/* Thân phong bì */}
-      <div className="relative z-20 -mt-8">
-        <svg viewBox="0 0 300 140" className="w-full h-auto drop-shadow-md" aria-hidden>
-          <path
-            d="M12 28 H288 Q298 28 298 38 V122 Q298 132 288 132 H12 Q2 132 2 122 V38 Q2 28 12 28 Z"
-            fill="var(--om-primary)"
-          />
-          <path
-            d="M2 38 L150 100 L298 38"
-            fill="none"
-            stroke="color-mix(in srgb, var(--om-on-primary) 25%, transparent)"
-            strokeWidth="3"
-          />
-          <path
-            d="M2 132 L110 72"
-            fill="none"
-            stroke="color-mix(in srgb, var(--om-on-primary) 18%, transparent)"
-            strokeWidth="2.5"
-          />
-          <path
-            d="M298 132 L190 72"
-            fill="none"
-            stroke="color-mix(in srgb, var(--om-on-primary) 18%, transparent)"
-            strokeWidth="2.5"
-          />
-        </svg>
-
-        {/* Nắp mở lên */}
-        <div
-          className="om-envelope-flap-open absolute left-0 right-0 top-0 -translate-y-[1px]"
-          style={{ height: '42%' }}
-        >
-          <svg viewBox="0 0 300 90" className="w-full h-full" aria-hidden>
-            <path
-              d="M2 8 L150 82 L298 8 Q298 2 288 2 H12 Q2 2 2 8 Z"
-              fill="color-mix(in srgb, var(--om-primary) 72%, #5a3d4a)"
-            />
-            <path
-              d="M2 8 L150 82 L298 8"
-              fill="none"
-              stroke="color-mix(in srgb, var(--om-on-primary) 20%, transparent)"
-              strokeWidth="2"
-            />
-          </svg>
-        </div>
-      </div>
-    </div>
+    <svg viewBox="0 0 120 100" className={className} aria-hidden>
+      {/* Nắp mở hướng lên (mặt trong đậm hơn) */}
+      <path
+        d="M6 46 L60 10 L114 46 Z"
+        fill="color-mix(in srgb, var(--om-primary) 52%, #9a4558)"
+      />
+      {/* Tờ giấy nhô ra khỏi túi */}
+      <rect x="34" y="18" width="52" height="42" rx="2.5" fill="#f7f1e6" />
+      <path
+        d="M60 34c-1.5-3-5.6-3-5.6 0.5 0 3.4 5.6 7 5.6 7s5.6-3.6 5.6-7c0-3.5-4.1-3.5-5.6-0.5z"
+        fill="var(--om-accent)"
+      />
+      {/* Thân phong bì đè mép dưới tờ giấy */}
+      <path
+        d="M6 46 H114 Q118 46 118 50 V88 Q118 94 112 94 H8 Q2 94 2 88 V50 Q2 46 6 46 Z"
+        fill="var(--om-primary)"
+      />
+      <path
+        d="M2 50 L60 82 L118 50"
+        fill="none"
+        stroke="color-mix(in srgb, var(--om-on-primary) 22%, transparent)"
+        strokeWidth="1.8"
+      />
+    </svg>
   );
 }
 
 function LetterSheet({ letter, signatureFallback }) {
+  const nickname = letter?.sender_name || signatureFallback || '…';
   const when = letter?.created_at
-    ? new Date(letter.created_at).toLocaleString('vi-VN')
+    ? new Date(letter.created_at).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : '';
+  const time = letter?.created_at
+    ? new Date(letter.created_at).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : '';
 
   return (
     <div
-      className="relative rounded-sm bg-[#faf6ef] border border-[color-mix(in_srgb,var(--om-primary-soft)_35%,#e8e0d4)] shadow-lg px-5 pt-6 pb-5 min-h-[200px] flex flex-col"
+      className="om-letter-paper relative bg-[#faf6ef] border border-[#e5ddd0] shadow-xl px-6 pt-7 pb-5 min-h-[240px] flex flex-col"
       style={{
-        boxShadow:
-          '0 10px 28px color-mix(in srgb, var(--om-shadow) 55%, transparent), 3px 3px 0 color-mix(in srgb, var(--om-primary-soft) 25%, transparent)',
+        borderRadius: 2,
+        boxShadow: '0 12px 32px rgba(0,0,0,0.18), 2px 2px 0 #ebe4d8',
       }}
     >
-      {/* góc giấy cong nhẹ */}
-      <div
-        className="pointer-events-none absolute bottom-0 right-0 w-10 h-10"
-        style={{
-          background:
-            'linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--om-primary-soft) 35%, #ebe4d8) 50%)',
-          borderBottomRightRadius: 2,
-        }}
-      />
-      <p
-        className="flex-1 text-[15px] leading-relaxed text-gray-700 whitespace-pre-wrap text-center italic"
-        style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-      >
+      <p className="flex-1 text-[1.35rem] leading-snug text-gray-800 whitespace-pre-wrap text-left">
         {letter?.content}
       </p>
-      <div className="mt-5 pt-3 border-t border-dashed border-[color-mix(in_srgb,var(--om-primary-soft)_45%,transparent)] text-center">
-        <p
-          className="text-sm font-semibold text-[var(--om-primary)]"
-          style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-        >
-          — {letter?.sender_name || signatureFallback || '…'}
+      <div className="mt-6 text-left">
+        <p className="text-[1.25rem] text-[var(--om-primary)] leading-tight">{nickname}</p>
+        <p className="text-[1.05rem] text-gray-500 mt-0.5">
+          {when}
+          {time ? ` · ${time}` : ''}
         </p>
-        <p className="text-[10px] text-gray-400 font-bold mt-1 tracking-wide">{when}</p>
       </div>
     </div>
   );
@@ -309,18 +266,16 @@ const Mailbox = () => {
                 <X size={18} />
               </button>
 
-              <OpenEnvelopeStage>
-                {deletingId === openLetter.id ? (
-                  <div className="rounded-sm bg-[#faf6ef] min-h-[200px] flex items-center justify-center px-4">
-                    <CuteLoader message={LOADING_COPY.MB_DELETING} />
-                  </div>
-                ) : (
-                  <LetterSheet
-                    letter={openLetter}
-                    signatureFallback={tabNames[openLetter.sender_id]}
-                  />
-                )}
-              </OpenEnvelopeStage>
+              {deletingId === openLetter.id ? (
+                <div className="om-letter-paper rounded-sm bg-[#faf6ef] min-h-[240px] flex items-center justify-center px-4">
+                  <CuteLoader message={LOADING_COPY.MB_DELETING} />
+                </div>
+              ) : (
+                <LetterSheet
+                  letter={openLetter}
+                  signatureFallback={tabNames[openLetter.sender_id]}
+                />
+              )}
 
               <div className="mt-4 flex justify-center">
                 <button
@@ -410,23 +365,20 @@ const Mailbox = () => {
         {!lettersLoading && filteredLetters.length > 0 && (
           <div className="grid grid-cols-3 gap-3 sm:gap-4">
             {filteredLetters.map((letter) => {
-              const unread =
-                activeTab === 'inbox' &&
-                !isLetterFromMe(letter, sessionUserId) &&
-                letter.is_read !== true;
+              // Chưa đọc = đóng; đã đọc = mở (outbox: đóng khi đối phương chưa đọc)
+              const isOpen = letter.is_read === true;
               return (
                 <button
                   key={letter.id}
                   type="button"
                   onClick={() => openLetterModal(letter)}
-                  className={`group relative aspect-[4/3] rounded-2xl p-2 sm:p-3 bg-white/70 border border-[color-mix(in_srgb,var(--om-primary-soft)_28%,transparent)] shadow-sm hover:shadow-md active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)] ${
-                    unread ? 'om-envelope-unread' : ''
-                  }`}
-                  aria-label={`Mở thư từ ${letter.sender_name || 'người ấy'}`}
+                  className="group relative aspect-[5/4] rounded-2xl p-1.5 sm:p-2.5 bg-white/70 border border-[color-mix(in_srgb,var(--om-primary-soft)_28%,transparent)] shadow-sm hover:shadow-md active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--om-primary)]"
+                  aria-label={`${isOpen ? 'Thư đã đọc' : 'Thư mới'} từ ${letter.sender_name || 'người ấy'}`}
                 >
-                  <ClosedEnvelopeIcon className="w-full h-full drop-shadow-sm group-hover:-translate-y-0.5 transition-transform" />
-                  {unread && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--om-accent)] shadow" />
+                  {isOpen ? (
+                    <OpenEnvelopeIcon className="w-full h-full drop-shadow-sm group-hover:-translate-y-0.5 transition-transform" />
+                  ) : (
+                    <ClosedEnvelopeIcon className="w-full h-full drop-shadow-sm group-hover:-translate-y-0.5 transition-transform" />
                   )}
                 </button>
               );
