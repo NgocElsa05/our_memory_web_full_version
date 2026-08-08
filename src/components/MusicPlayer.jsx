@@ -208,6 +208,9 @@ const MusicPlayer = () => {
           modestbranding: 1,
           controls: 1,
           fs: 0,
+          // Loop 1 video: YouTube yêu cầu playlist = chính videoId đó
+          loop: 1,
+          playlist: id,
           origin: window.location.origin,
         },
         events: {
@@ -249,6 +252,16 @@ const MusicPlayer = () => {
             if (cancelled) return;
             // 1 playing
             if (event?.data === 1) setNeedsTapToPlay(false);
+            // 0 ended — phát lại từ đầu (fallback nếu loop playerVars không ăn)
+            if (event?.data === 0) {
+              try {
+                event.target.seekTo?.(0, true);
+                event.target.playVideo?.();
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
             // 2 paused — nếu vừa unlock thì cần chạm lại (đừng tự playVideo ngoài gesture)
             if (event?.data === 2 && Date.now() - unlockAtRef.current < 5000) {
               setNeedsTapToPlay(true);
